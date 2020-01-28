@@ -2,14 +2,18 @@ import random
 import numpy as np
 
 
-class P_circuit:
-    def __init__(self, Nm=0, J=[[]], h=[]):
+class pcircuit:
+    def __init__(self, Nm=0, J=[[]], h=[], beta=1, model="cpsl", delta_t=0.01):
         self.Nm = Nm
-        self.J = J
-        self.h = h
+        self.J = np.array(J)
+        self.h = np.array(h)
+        self.beta = beta
+        self.model = model
+        self.dt = delta_t
+        self.m = np.sign(np.add(np.random.rand(Nm) * 2, -1))
 
     def __call__(self):
-        return self.J, self.h
+        return "I am a p-circuit with " + str(self.Nm) + " p-bits."
 
     def setWeights(self, J, h):
         self.J = J
@@ -18,21 +22,86 @@ class P_circuit:
     def setSize(self, num_pbits):
         self.Nm = num_pbits
 
-    def buildRandomNetwork(self, num_pbits, J_max_weight=5, h_max_weight=5, random_H=False):
+    def setBeta(self, beta):
+        self.beta = beta
+
+    def setModel(self, model):
+        self.model = model
+
+    def setState(self, m):
+        self.m = m
+
+    def getState(self):
+        return self.m
+
+    def getWeights(self):
+        return self.J, self.h
+
+    def getmodel(self):
+        return self.model
+
+    def getSize(self):
+        return self.Nm
+
+    def getBeta(self):
+        return self.beta
+
+    def reset(self):
+        self.m = np.sign(np.add(np.random.rand(self.Nm) * 2, -1))
+
+    def buildRandomNetwork(self, Nm, weight_type="float", J_max_weight=5, random_h=False, h_max_weight=5):
         """
-        build a random p-circuit 
+        build a random p-circuit. By default, only a random J will be made. If random_h is set to True, then 
+        a random h will also be set with maximum values set by h_max_weight. 
+        weight_type can be float, int
         """
-        self.Nm = num_pbits
-        for i in range(self.Nm):
+        if weight_type == "float":
+            self.Nm = Nm
+            self.m = np.sign(np.add(np.random.rand(Nm) * 2, -1))
 
+            self.J = (np.random.rand(Nm, Nm)*2-1) * J_max_weight/2
+            self.J = self.J + np.transpose(self.J)
+            np.fill_diagonal(self.J, 0)
+            if random_h:
+                self.h = np.add(np.random.rand(Nm) * 2, -1) * h_max_weight
+            else:
+                self.h = np.zeros((Nm))
 
-J = [[1, 2], [3, 4]]
-Nm = 2
-h = [1, 1]
+    def saveSteps(self, Nt, model=None):
+        """
+        can provide an update scheme(cpsl, ppsl) to take effect for num_steps (Nt) timesteps, otherwise, the currently set 
+        update scheme will take effect. If no update scheme has been selected, it will default to classical psl. 
+        """
+        if model is None:
+            model = self.model
+        if model == "cpsl":
+            return self.cpsl(self.Nm, self.J, self.h, self.beta, Nt)
+        elif model == "ppsl":
+            return self.ppsl(self.Nm, self.J, self.h, self.beta, Nt, self.dt)
+        else:
+            print("Error: unknown model")
 
-pcircuit = P_circuit(Nm, J, h)
-pcircuit = P_circuit()
+    def cpsl(self, Nm, J, h, beta, Nt):
+        J = np.array(J)
+        h = np.array(h)
+        m_all = [[0 for i in range(Nm)] for j in range(Nt)]
+        for j in range(Nt):
+            for i in np.random.permutation(Nm):
+                print(self.m)
+                xx = beta * (np.dot(self.m, J[:, i]) + h[i])
+                self.m[i] = np.sign(random.uniform(-1, 1) - np.tanh(xx))
+            m_all[j] = self.m
+        return m_all
 
-pcircuit.setWeights(J, h)
-pcircuit.setSize(4)
-print(pcircuit())
+    def ppsl(self, Nm, J, h, beta, Nt, dt):
+        J = np.array(J)
+        h = np.array(h)
+
+        m_all = [[0 for i in range(Nm)] for j in range(Nt)]
+        for i in range(Nt):
+            x = np.multiply(np.add(np.dot(J, self.m), h), -1*beta)
+            p = np.exp(-1*dt * np.exp(np.multiply(-1*self.m, x)))
+            self.m = np.multiply(self.m, np.sign(
+                np.subtract(p, np.random.rand(Nm))))
+            m_all[i] = self.m
+        return m_all

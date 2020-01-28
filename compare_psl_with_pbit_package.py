@@ -1,6 +1,16 @@
+# -*- coding: utf-8 -*-
+"""
+Created on Tue Jan 28 16:54:53 2020
+
+@author: alasg
+
+compare_psl.py replicated using pbit package
+"""
+
 import numpy as np
 import matplotlib.pyplot as plt
 import random
+import pbit
 
 I0 = 1
 d_t = 1/15
@@ -39,35 +49,12 @@ def boltzmann(J, H, Nt, Nm, energy_boltz):
     return np.multiply(eb, np.ones(Nt * Nm))
 
 
-def old_psl(m, J, H, energy_old):
-    cc = 0  # measure time using clock cycles instead of program execution time
-    print('Finding curve for old psl...')
-    for j in range(Nt):
-        for i in np.random.permutation(Nm):
-            I = I0 * (np.dot(m, J[:, i]) + H[i])
-            m[i] = np.sign(random.uniform(-1, 1) - np.tanh(I))
-            energy_old[cc] = I0 * (np.dot(m, H) + np.multiply(0.5, np.dot(np.dot(m, J), m)))
-            cc += 1
-            if np.mod(cc, (Nt*Nm)/5) == 0:
-                print(Nm*Nt-cc)
-    energy_old = np.divide(np.cumsum(energy_old), np.arange(1, Nt * Nm + 1))
-    return energy_old
+def old_psl(m, J, H, Nm):
+   pcir = pbit.P_circuit(Nm=Nm, ) 
 
 
 def new_psl(m, J, H, dt, energy_new):
-    cc = 0
-    print('Finding curve for new psl...')
-    for i in range(Nt * Nm):
-        x = np.multiply(np.add(np.dot(J, m), H), -1*I0)
-        p = np.exp(-1*dt * np.exp(np.multiply(-1*m, x)))
-        m = np.multiply(m, np.sign(np.subtract(p, np.random.rand(Nm))))
-        energy_new[cc] = I0 * (np.dot(m, H) + np.multiply(0.5, np.dot(np.dot(m, J), m)))        
-        cc += 1
-        if np.mod(cc, (Nt*Nm)/5) == 0:
-            print(Nm*Nt-cc)
-    energy_new = np.divide(np.cumsum(energy_new), np.arange(1, Nt*Nm+1))
-    return energy_new
-
+    
 
 # run functions
 energy_old = old_psl(m, J, H, energy_old)
