@@ -23,6 +23,7 @@ To get started, initialize a p-circuit with the necessary parameters following:
 * [reset](#reset)
 * [buildRandomNetwork](#buildRandomNetwork)
 * [saveSteps](#saveSteps)
+* [getBotlzmann](#getBoltzmann)
 
 
 
@@ -65,6 +66,24 @@ each value defaults to those shown above. They can each be provided by the user 
     m = myPcircuit.saveSteps(Nt)
 
 saveSteps returns an Nt * Nm matrix. Each row of m contains the state of each Nm p-bits as the p-circuit ran Nt times.
+
+### getBoltzmann
+    
+    histboltz = myPcircuit.getBoltzmann()
+
+myPcircuit contains the J, h, and Nm of your current pcircuit. These parameters are used to find the Boltzmann statistics of which states myPcircuit should occupy. 
+
+Returns a normalized-to-1 np array of length 2^Nm with the exact probability of occupation for each state. 
+
+Note, for Nm > 15, it may take a very long time for getBoltzmann() to execute. It must calculate a probability for each of 2^Nm states. 
+
+Ex.   
+>  histboltz = myPcircuit.getBoltzmann()  
+>  print(histboltz)
+
+prints the following for Nm = 3:  
+
+> [0.04573869 0.14532606 0.22552337 0.08341188 0.08341188 0.22552337 0.14532606 0.04573869]
 
 ## Variable Definitions
 

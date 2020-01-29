@@ -35,7 +35,8 @@ def boltzmann(J, H, Nt, Nm, energy_boltz):
     if np.mod(cc, (int(pow(2, Nm) / 5))) == 0:
         print(pow(2, Nm) - cc)
     energy_boltz = np.subtract(energy_boltz, np.sum(energy_boltz))
-    eb = np.sum(np.multiply(energy_boltz,np.exp(-1*energy_boltz)))/np.sum(np.exp(-1*energy_boltz))
+    eb = np.sum(np.multiply(energy_boltz, np.exp(-1*energy_boltz))) / \
+        np.sum(np.exp(-1*energy_boltz))
     return np.multiply(eb, np.ones(Nt * Nm))
 
 
@@ -46,7 +47,8 @@ def old_psl(m, J, H, energy_old):
         for i in np.random.permutation(Nm):
             I = I0 * (np.dot(m, J[:, i]) + H[i])
             m[i] = np.sign(random.uniform(-1, 1) - np.tanh(I))
-            energy_old[cc] = I0 * (np.dot(m, H) + np.multiply(0.5, np.dot(np.dot(m, J), m)))
+            energy_old[cc] = I0 * (np.dot(m, H) +
+                                   np.multiply(0.5, np.dot(np.dot(m, J), m)))
             cc += 1
             if np.mod(cc, (Nt*Nm)/5) == 0:
                 print(Nm*Nt-cc)
@@ -61,7 +63,8 @@ def new_psl(m, J, H, dt, energy_new):
         x = np.multiply(np.add(np.dot(J, m), H), -1*I0)
         p = np.exp(-1*dt * np.exp(np.multiply(-1*m, x)))
         m = np.multiply(m, np.sign(np.subtract(p, np.random.rand(Nm))))
-        energy_new[cc] = I0 * (np.dot(m, H) + np.multiply(0.5, np.dot(np.dot(m, J), m)))        
+        energy_new[cc] = I0 * \
+            (np.dot(m, H) + np.multiply(0.5, np.dot(np.dot(m, J), m)))
         cc += 1
         if np.mod(cc, (Nt*Nm)/5) == 0:
             print(Nm*Nt-cc)
