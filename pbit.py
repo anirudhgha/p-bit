@@ -25,8 +25,11 @@ class pcircuit:
     def setBeta(self, beta):
         self.beta = beta
 
-    def setModel(self, model):
+    def setModel(self, model, dt=None):
+        if dt is None:
+            dt = self.dt
         self.model = model
+        self.dt = dt
 
     def setState(self, m):
         self.m = m
@@ -48,6 +51,13 @@ class pcircuit:
 
     def reset(self):
         self.m = np.sign(np.add(np.random.rand(self.Nm) * 2, -1))
+
+    def getBoltzmann(self, Nm=None):
+        if Nm is None:
+            Nm = self.Nm
+            '''
+            fill in code for boltzmann
+            '''
 
     def buildRandomNetwork(self, Nm, weight_type="float", J_max_weight=5, random_h=False, h_max_weight=5):
         """
@@ -84,24 +94,25 @@ class pcircuit:
     def cpsl(self, Nm, J, h, beta, Nt):
         J = np.array(J)
         h = np.array(h)
-        m_all = [[0 for i in range(Nm)] for j in range(Nt)]
+        m_all = np.zeros((Nt,Nm))
         for j in range(Nt):
-            for i in np.random.permutation(Nm):
-                print(self.m)
+            for i in range(Nm): #np.random.permutation(Nm):
                 xx = beta * (np.dot(self.m, J[:, i]) + h[i])
                 self.m[i] = np.sign(random.uniform(-1, 1) - np.tanh(xx))
             m_all[j] = self.m
+        m_all = np.array(m_all)
+        m_all[m_all < 0] = 0
         return m_all
 
     def ppsl(self, Nm, J, h, beta, Nt, dt):
         J = np.array(J)
         h = np.array(h)
-
-        m_all = [[0 for i in range(Nm)] for j in range(Nt)]
+        m_all = np.zeros((Nt,Nm))
         for i in range(Nt):
             x = np.multiply(np.add(np.dot(J, self.m), h), -1*beta)
             p = np.exp(-1*dt * np.exp(np.multiply(-1*self.m, x)))
-            self.m = np.multiply(self.m, np.sign(
-                np.subtract(p, np.random.rand(Nm))))
+            self.m = np.multiply(self.m, np.sign(np.subtract(p, np.random.rand(Nm))))
             m_all[i] = self.m
-        return m_all
+        m_all = np.array(m_all)
+        m_all[m_all < 0] = 0
+        return np.array(m_all)

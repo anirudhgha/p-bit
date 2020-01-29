@@ -4,7 +4,7 @@ import random
 
 I0 = 1
 d_t = 1/15
-Nt, Nm = 200, 200  # Nm <= b size limit yields boltzmann curve as well
+Nt, Nm = 20000, 15  # Nm <= b size limit yields boltzmann curve as well
 boltz_size_lim = 20
 
 J = np.add(np.random.rand(Nm, Nm) * 2, -1)  # matrix of values between [-1, 1)
