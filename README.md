@@ -7,7 +7,7 @@ A comprehensive p-bit python package that simplifies execution of p-circuits. Se
 * [Variable Definitions](#Variable-Definitions)
 
 ## To Do
-- [ ] cpsl and ppsl are not matching Boltzmann
+- [x] ~~cpsl and ppsl are not matching Boltzmann~~, error was with pbit.convertToBase10
 - [ ] convertToBase10 needs to accept either 1D array or 2D array where each row is a sample, and convert every row to base 10 
 and return a 1D array of base 10 values. 
 - [ ] gpu speeds are slower than cpu speeds, need to optimize cpsl and ppsl functions to better use gpu 

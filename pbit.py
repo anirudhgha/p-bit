@@ -117,9 +117,9 @@ class pcircuit:
 
 
 def convertToBase10(a, inputBase=2):
-    arr = np.array(a)
+    arr = np.flip(np.array(a))
     Look = inputBase**np.arange(len(arr))
-    return int(round(np.dot(a, Look)))
+    return int(round(np.dot(arr, Look)))
 
 
 def cpsl(m, Nm, J, h, beta, Nt):
@@ -128,6 +128,7 @@ def cpsl(m, Nm, J, h, beta, Nt):
         for i in np.random.permutation(Nm):
             xx = -1*beta * (np.dot(m, J[:, i]) + h[i])
             m[i] = np.sign(random.uniform(-1, 1) + np.tanh(xx))
+
         m_all[j, :] = m
     m_all = np.array(m_all)
     m_all[m_all < 0] = 0

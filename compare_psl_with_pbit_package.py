@@ -17,7 +17,7 @@ np.random.seed(0)
 Nm = 3
 Nt = 100000
 I0 = 1
-d_t = 1 / (2 * Nm)
+d_t = 1 / (3 * Nm)
 
 # construct weights
 J = np.add(np.random.rand(Nm, Nm) * 2, -1)
@@ -30,19 +30,29 @@ J = [[0, -2, -2],
      [-2, 1, 0]]
 h = [2, -1, -1]
 
-my_pcircuit = pbit.pcircuit(Nm, J, h, beta=I0, model="cpsl")     # build a p-circuit
-mcpsl = my_pcircuit.runFor(Nt)                                   # run network for Nt timesteps
-my_pcircuit.setModel("ppsl", dt=d_t)                             # modify the p-circuit to use the ppsl model
-mppsl = my_pcircuit.runFor(Nt)                                   # run network for Nt timesteps
+my_pcircuit = pbit.pcircuit(Nm, J, h, beta=I0, model="cpsl")  # build a p-circuit
+mcpsl = my_pcircuit.runFor(Nt)  # run network for Nt timesteps
+my_pcircuit.setModel("ppsl", dt=d_t)  # modify the p-circuit to use the ppsl model
+mppsl = my_pcircuit.runFor(Nt)  # run network for Nt timesteps
 
-histboltz = my_pcircuit.getBoltzmann() * Nt
+histboltz = my_pcircuit.getBoltzmann()
 histcpsl = np.array([0 for i in range(2 ** Nm)])
 histppsl = np.array([0 for i in range(2 ** Nm)])
 
 for i in range(Nt):
-    histcpsl[pbit.convertToBase10(mcpsl[i, :])] += 1            # build histogram of Nt states
+    histcpsl[pbit.convertToBase10(mcpsl[i, :])] += 1  # build histogram of Nt states
     histppsl[pbit.convertToBase10(mppsl[i, :])] += 1
 
+histcpsl = histcpsl / np.sum(histcpsl)
+histppsl = histppsl / np.sum(histppsl)
+
+# calculate error from boltz
+ErrorPSL_cpsl = np.sqrt(np.divide(np.sum(np.sum((np.abs(np.subtract(histboltz, histcpsl))) ** 2)),
+                                  np.sum(np.sum((np.abs(histboltz)) ** 2))))
+ErrorPSL_ppsl = np.sqrt(np.divide(np.sum(np.sum((np.abs(np.subtract(histboltz, histppsl))) ** 2)),
+                                  np.sum(np.sum((np.abs(histboltz)) ** 2))))
+
+print("cpsl mse: ", ErrorPSL_cpsl, "\nppsl mse: ", ErrorPSL_ppsl)
 
 # plot
 barWidth = 0.25
