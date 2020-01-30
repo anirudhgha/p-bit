@@ -1,0 +1,3 @@
+#!C:\Users\alasg\Documents\GitHub\p-bit\.venv\Scripts\python.exe
+from numba.pycc import main
+main()

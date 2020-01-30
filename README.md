@@ -22,9 +22,9 @@ To get started, initialize a p-circuit with the necessary parameters following:
 * [get variable state](#getWeights)
 * [reset](#reset)
 * [buildRandomNetwork](#buildRandomNetwork)
-* [saveSteps](#saveSteps)
+* [runFor](#runFor)
 * [getBotlzmann](#getBoltzmann)
-
+* [Out of class methods](#Out-of-Class-Methods)
 
 
 ### setWeights
@@ -38,7 +38,7 @@ To get started, initialize a p-circuit with the necessary parameters following:
 ### setState
     my_pcircuit.setState(m)
 ### getWeights
-    my_pcircuit.getWeights()
+    J,h = my_pcircuit.getWeights()
 returns J and h
 ### getSize
     my_pcircuit.getSize()
@@ -62,10 +62,10 @@ pcircuit.buildRandomNetwork(Nm, weight_type="float", J_max_weight=5, random_h=Fa
 ```
 each value defaults to those shown above. They can each be provided by the user to customize the random p-circuit setup. 
 
-### saveSteps
-    m = myPcircuit.saveSteps(Nt)
+### runFor
+    m = myPcircuit.runFor(Nt)
 
-saveSteps returns an Nt * Nm matrix. Each row of m contains the state of each Nm p-bits as the p-circuit ran Nt times.
+runFor returns an Nt * Nm matrix. Each row of m contains the state of each Nm p-bits as the p-circuit ran Nt times.
 
 ### getBoltzmann
     
@@ -84,6 +84,18 @@ Ex.
 prints the following for Nm = 3:  
 
 > [0.04573869 0.14532606 0.22552337 0.08341188 0.08341188 0.22552337 0.14532606 0.04573869]
+
+### Out of Class Methods
+#### convertToBase10
+    b = convertToBase10(a, inputBase=2)
+A handy function for converting p-bit output from runFor into decimal values that can be plotted in a histogram. Takes as input a list or array of binary values ex. [1,0,0,1,0] and returns a decimal integer ex. 18.
+
+possible use case:
+```python
+m = pcircuit.runFor(Nt)
+for i in range(Nt):
+    decimal_states[i] = pbit.convertToBase10(m[i, :])
+```
 
 ## Variable Definitions
 
