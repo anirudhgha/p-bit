@@ -1,10 +1,18 @@
 # p-bit Python Package
 A comprehensive p-bit python package that simplifies execution of p-circuits. See www.purdue.edu/p-bit to learn about p-bits. 
 
+* [To Do](#To-Do)
 * [Getting Started](#Getting-Started)
 * [Methods](#Methods)
 * [Variable Definitions](#Variable-Definitions)
 
+## To Do
+- [ ] cpsl and ppsl are not matching Boltzmann
+- [ ] convertToBase10 needs to accept either 1D array or 2D array where each row is a sample, and convert every row to base 10 
+and return a 1D array of base 10 values. 
+- [ ] gpu speeds are slower than cpu speeds, need to optimize cpsl and ppsl functions to better use gpu 
+- [ ] write function that samples every Nth timestep, and returns Nt/N samples though it runs for Nt timesteps
+- [ ] introduce more post-processing functions for analysing data, maybe quantum functions
 
 ## Getting Started
 To get started, initialize a p-circuit with the necessary parameters following:
@@ -100,7 +108,8 @@ for i in range(Nt):
 ## Variable Definitions
 
 * ##### Nm - Number of p-bits
-* #### J - A 2D adjacency matrix of the network, also known as the weight matrix
-* #### h - A 1D vector of biases
-* #### beta - When running the p-circuit, the input to p-bits will be scaled up by beta before being fed into the activation function. 
-* #### model - A parallel psl model ("ppsl") and the classical psl model are supported. 
+* ##### J - A 2D adjacency matrix of the network, also known as the weight matrix
+* ##### h - A 1D vector of biases
+* ##### beta - When running the p-circuit, the input to p-bits will be scaled up by beta before being fed into the activation function. 
+* ##### model - A parallel psl model ("ppsl") and the classical psl model are supported. 
+

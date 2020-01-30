@@ -30,29 +30,25 @@ J = [[0, -2, -2],
      [-2, 1, 0]]
 h = [2, -1, -1]
 
-# main
-myPcircuit = pbit.pcircuit(Nm, J, h, beta=I0, model="cpsl")  # build a p-circuit
-mcpsl = myPcircuit.runFor(Nt)  # save Nt snapshots of the network
-myPcircuit.setModel("ppsl", dt=d_t)  # modify the p-circuit to use the ppsl model
-mppsl = myPcircuit.runFor(Nt)  # save Nt snapshots
+my_pcircuit = pbit.pcircuit(Nm, J, h, beta=I0, model="cpsl")     # build a p-circuit
+mcpsl = my_pcircuit.runFor(Nt)                                   # run network for Nt timesteps
+my_pcircuit.setModel("ppsl", dt=d_t)                             # modify the p-circuit to use the ppsl model
+mppsl = my_pcircuit.runFor(Nt)                                   # run network for Nt timesteps
 
-print(mcpsl.shape)
-
-histboltz = myPcircuit.getBoltzmann() * Nt
-
+histboltz = my_pcircuit.getBoltzmann() * Nt
 histcpsl = np.array([0 for i in range(2 ** Nm)])
 histppsl = np.array([0 for i in range(2 ** Nm)])
 
 for i in range(Nt):
-    histcpsl[pbit.convertToBase10(mcpsl[i, :])] += 1
+    histcpsl[pbit.convertToBase10(mcpsl[i, :])] += 1            # build histogram of Nt states
     histppsl[pbit.convertToBase10(mppsl[i, :])] += 1
 
-# interchange histboltz, histcpsl, and histppsl to test different functions
+
+# plot
 barWidth = 0.25
 x1 = np.arange(2 ** Nm)
 x2 = np.array([x + barWidth for x in x1])
 x3 = np.array([x + barWidth for x in x2])
-
 plt.bar(x1, histcpsl, width=barWidth, edgecolor='white', label='cpsl')
 plt.bar(x2, histppsl, width=barWidth, edgecolor='white', label='ppsl')
 plt.bar(x3, histboltz, width=barWidth, edgecolor='white', label='boltz')
