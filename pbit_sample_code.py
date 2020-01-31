@@ -9,20 +9,19 @@ Sample code that runs a simple p-circuit using the pbit package
 import pbit
 from timeit import default_timer as timer
 
-J = [[1, 2], [3, 4]]
-Nm = 2
+J = [[0, -0.4407, 0, 0, 0, 0],
+              [-0.4407, 0, -0.4407, 0, 0, 0],
+              [0, -0.4407, 0, 0, 0, 0],
+              [0, 0, 0, 0, -0.4407, 0],
+              [0, 0, 0, -0.4407, 0, -0.4407],
+              [0, 0, 0, 0, -0.4407, 0]]
+h = [2, -1, -1]
+
+Nm = 20
 h = [1, 1]
 Nt = 100000
 beta = 0
 
-
-pcircuit = pbit.pcircuit()
-pcircuit.buildRandomNetwork(Nm=3, J_max_weight=10)
-
-J, h = pcircuit.getWeights()
-
-decimal_states = [0 for i in range(Nt)]
-
-m = pcircuit.saveSteps(Nt)
-for i in range(Nt):
-    decimal_states[i] = pbit.convertToBase10(m[i])
+my_pcircuit = pbit.pcircuit(Nm, J, h)
+my_pcircuit.buildRandomNetwork(Nm)
+my_pcircuit.draw(labels=True)

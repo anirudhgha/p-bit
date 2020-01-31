@@ -5,7 +5,6 @@ from timeit import default_timer as timer
 
 # normal function to run on cpu
 
-
 def func(a):
     for i in range(10000000):
         a[i] += 1

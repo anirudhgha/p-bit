@@ -7,12 +7,18 @@ A comprehensive p-bit python package that simplifies execution of p-circuits. Se
 * [Variable Definitions](#Variable-Definitions)
 
 ## To Do
+- [ ] add pbit.convertMatToCSV to convert matlab to python readable easily, maybe could 
+just figure out how to export mat files as csv. 
+- [ ] incorporate annealing (constant, linear, geometric to begin)
+- [x] extend class with draw function to draw the current p-circuit object
 - [x] ~~cpsl and ppsl are not matching Boltzmann~~, error was with pbit.convertToBase10
 - [ ] convertToBase10 needs to accept either 1D array or 2D array where each row is a sample, and convert every row to base 10 
 and return a 1D array of base 10 values. 
 - [ ] gpu speeds are slower than cpu speeds, need to optimize cpsl and ppsl functions to better use gpu 
 - [ ] write function that samples every Nth timestep, and returns Nt/N samples though it runs for Nt timesteps
 - [ ] introduce more post-processing functions for analysing data, maybe quantum functions
+- [ ] long term goal: incorporate fpga commands into pbit package
+- [ ] possible bug in draw function (_not_drawn() does not correctly keep track of drawn labels)
 
 ## Getting Started
 To get started, initialize a p-circuit with the necessary parameters following:
