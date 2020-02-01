@@ -10,18 +10,17 @@ import pbit
 from timeit import default_timer as timer
 
 J = [[0, -0.4407, 0, 0, 0, 0],
-              [-0.4407, 0, -0.4407, 0, 0, 0],
-              [0, -0.4407, 0, 0, 0, 0],
-              [0, 0, 0, 0, -0.4407, 0],
-              [0, 0, 0, -0.4407, 0, -0.4407],
-              [0, 0, 0, 0, -0.4407, 0]]
-h = [2, -1, -1]
+     [-0.4407, 0, -0.4407, 0, 0, 0],
+     [0, -0.4407, 0, 0, 0, 0],
+     [0, 0, 0, 0, -0.4407, 0],
+     [0, 0, 0, -0.4407, 0, -0.4407],
+     [0, 0, 0, 0, -0.4407, 0]]
+h = [2, -1, -1, 0, 0, 0]
 
-Nm = 20
+Nm = 6
 h = [1, 1]
 Nt = 100000
 beta = 0
 
-my_pcircuit = pbit.pcircuit(Nm, J, h)
-my_pcircuit.buildRandomNetwork(Nm)
+my_pcircuit = pbit.pcircuit(J, h)
 my_pcircuit.draw(labels=True)

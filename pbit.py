@@ -4,15 +4,19 @@ import cupy as cp
 import turtle
 import math
 
+
 class pcircuit:
-    def __init__(self, Nm=0, J=[[]], h=[], beta=1, model="cpsl", delta_t=0.01, start_beta=1, end_beta=2,
+    def __init__(self, J=[[]], h=[], beta=1, Nm=0, model="cpsl", delta_t=0.01, start_beta=1, end_beta=2,
                  growth_factor=1.001, anneal="constant"):
-        self.Nm = Nm
         self.J = np.array(J)
         self.h = np.array(h)
+        if self.J is None:
+            self.Nm = 0
+        else:
+            self.Nm = len(self.J)
         self.model = model
         self.dt = delta_t
-        self.m = np.sign(np.add(np.random.rand(Nm) * 2, -1))
+        self.m = np.sign(np.add(np.random.rand(self.Nm) * 2, -1))
         # annealing
         self.beta = beta
         self.start_beta = start_beta
@@ -163,11 +167,11 @@ class pcircuit:
             return
 
         # setup
-        #resize screen to fit
+        # resize screen to fit
         # Nm*100 == 2*pi*r
         # Nm*100/(2*pi) == r
         # screensize = 2r+200 = (Nm*100/pi)+200
-        turtle.screensize((self.Nm*100/np.pi)+200,(self.Nm*100/np.pi)+400)
+        turtle.screensize((self.Nm * 100 / np.pi) + 200, (self.Nm * 100 / np.pi) + 400)
 
         turtle.speed("fastest")
         turtle.hideturtle()
@@ -197,7 +201,7 @@ class pcircuit:
                     turtle.goto(pbitpos[j, 0], pbitpos[j, 1])
                     turtle.penup()
 
-                    if labels: # label weights
+                    if labels:  # label weights
                         turtle.penup()
                         turtle.goto(pbitpos[i, 0], pbitpos[i, 1])
                         turtle.setheading(turtle.towards(pbitpos[j, 0], pbitpos[j, 1]))
@@ -222,9 +226,20 @@ class pcircuit:
 
 
 def convertToBase10(a, inputBase=2):
+    try:
+        b = a[0]
+    except IndexError:
+        print("Empty array sent to convertToBase10 function")
+        return
+    try:
+        inputBase > 0
+    except:
+        print("Input base must be larger than 0")
+        return
     arr = np.flip(np.array(a), axis=0)
-    Look = inputBase ** np.arange(len(arr))
-    return int(round(np.dot(arr, Look)))
+    length = len(arr[0]) if arr.ndim == 2 else len(arr)
+    Look = inputBase ** np.arange(length)
+    return np.round(np.dot(arr, Look)).astype("int")
 
 
 def errorMSE(predicted, exact):
@@ -241,7 +256,7 @@ def _incrementAnnealing(cur_beta, anneal, annealing_factors, Nt, start=False):
         return cur_beta + (annealing_factors[1] - annealing_factors[0]) / Nt
     if anneal == "geometric":
         return cur_beta * annealing_factors[2] if (cur_beta * annealing_factors[2] < annealing_factors[1]) else \
-        annealing_factors[1]
+            annealing_factors[1]
 
 
 def _cpsl(m, Nm, J, h, Nt, anneal, annealing_factors):

@@ -2,7 +2,7 @@
 Created on Tue Jan 28 16:54:53 2020
 
 @author: anirudh_ghantasala
-compare_psl.py replicated using pbit package
+compare_psl.py replicated using pbit package. General pbit tester.
 """
 
 import numpy as np
@@ -39,7 +39,7 @@ J = [[0, -0.4407, 0, 0, 0, 0],
 h = [0, 0, 0, 0, 0, 0]
 h = np.zeros(Nm)
 
-my_pcircuit = pbit.pcircuit(Nm, J, h, beta=I0, model="cpsl")    # build a p-circuit
+my_pcircuit = pbit.pcircuit(J=J, h=h, beta=I0, model="cpsl")    # build a p-circuit
 mcpsl = my_pcircuit.runFor(Nt)                                  # run network for Nt timesteps
 my_pcircuit.setModel("ppsl", dt=d_t)                            # modify the p-circuit to use the ppsl model
 mppsl = my_pcircuit.runFor(Nt)                                  # run network for Nt timesteps
@@ -47,14 +47,13 @@ mppsl = my_pcircuit.runFor(Nt)                                  # run network fo
 histboltz = my_pcircuit.getBoltzmann()
 histcpsl = np.array([0 for i in range(2 ** Nm)])
 histppsl = np.array([0 for i in range(2 ** Nm)])
-
 for i in range(Nt):
     histcpsl[pbit.convertToBase10(mcpsl[i, :])] += 1            # build histogram of Nt states
     histppsl[pbit.convertToBase10(mppsl[i, :])] += 1
 
+
 histcpsl = histcpsl / np.sum(histcpsl)                          # normalize histogram arrays
 histppsl = histppsl / np.sum(histppsl)
-
 # calculate error from boltz
 ErrorPSL_cpsl = pbit.errorMSE(histcpsl, histboltz)              # find euclidean distance between models and exact solution
 ErrorPSL_ppsl = pbit.errorMSE(histppsl, histboltz)
@@ -62,6 +61,7 @@ ErrorPSL_ppsl = pbit.errorMSE(histppsl, histboltz)
 print("cpsl mse: ", ErrorPSL_cpsl, "\nppsl mse: ", ErrorPSL_ppsl)
 
 # plot
+my_pcircuit.draw()
 barWidth = 0.25
 x1 = np.arange(2 ** Nm)
 x2 = np.array([x + barWidth for x in x1])
