@@ -10,7 +10,6 @@ import matplotlib.pyplot as plt
 import random
 import pbit
 
-random.seed(0)
 np.random.seed(0)
 
 # set parameters
@@ -39,7 +38,7 @@ J = [[0, -0.4407, 0, 0, 0, 0],
 h = [0, 0, 0, 0, 0, 0]
 h = np.zeros(Nm)
 
-my_pcircuit = pbit.pcircuit(J=J, h=h, beta=I0, model="cpsl")    # build a p-circuit
+my_pcircuit = pbit.pcircuit(J=J, h=h, beta=I0, model="cpsl", anneal="linear", start_beta=I0, end_beta=10)    # build a p-circuit
 mcpsl = my_pcircuit.runFor(Nt)                                  # run network for Nt timesteps
 my_pcircuit.setModel("ppsl", dt=d_t)                            # modify the p-circuit to use the ppsl model
 mppsl = my_pcircuit.runFor(Nt)                                  # run network for Nt timesteps

@@ -188,7 +188,6 @@ class pcircuit:
             turtle.penup()
             turtle.right(turn)
             turtle.forward(100)
-        print(pbitpos)
 
         # draw weights
         drawn = []
