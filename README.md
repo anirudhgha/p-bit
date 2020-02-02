@@ -13,7 +13,7 @@ GPU works! Running an And gate on MATLAB for 1e7 samples takes ~46s, takes ~9.8s
 the next batch at the end of that length)
 - [ ] add pbit.convertMatToCSV to convert matlab to python readable easily, maybe could 
 just figure out how to export mat files as csv. 
-- [x] incorporate annealing (constant, linear, geometric to begin)
+- [x] ~~incorporate annealing (constant, linear, geometric to begin)~~ test annealing, doesn't seem to be making a difference
 - [x] extend class with draw function to draw the current p-circuit object
 - [x] ~~cpsl and ppsl are not matching Boltzmann~~, error was with pbit.convertToBase10
 - [ ] convertToBase10 needs to accept either 1D array or 2D array where each row is a sample, and convert every row to base 10 
