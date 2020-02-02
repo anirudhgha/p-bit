@@ -31,8 +31,7 @@ def cpsl_core_gpu(m, Nm, J, h, Nt):
             xx = -1 * 1 * (np.dot(m, arr1) + h[i])
             m[i] = np.sign(np.random.uniform(-1, 1) + np.tanh(xx))
         m_all[j*b:j*b+Nm] = m
-    #m_all = np.array(m_all)
-    #m_all[m_all < 0] = 0
+    m_all[m_all < 0] = 0
     return m_all
 
 
@@ -49,7 +48,7 @@ Nm = float64(len(J))
 m = np.sign(np.add(np.random.rand(int(Nm)) * 2, -1))
 m_all = cpsl_core_gpu(m, Nm, Jflat, h, Nt)
 m_all[m_all < 0] = 0
-m_all = np.array(m_all).reshape((int(Nt),int(Nm)))
+m_all = np.array(m_all).reshape((int(Nt), int(Nm)))
 deci = pbit.convertToBase10(m_all)
 histdeci = np.zeros(2 ** int(Nm))
 for i in range(int(Nt)):

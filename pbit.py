@@ -3,6 +3,8 @@ import numpy as np
 import cupy as cp
 import turtle
 import math
+from numba import jit, cuda, float64, njit, int64
+
 
 
 class pcircuit:
@@ -127,11 +129,18 @@ class pcircuit:
         geometric (beta_start, beta_end, growth_factor)
         :param Nt:
         :param model:
-        :param gpu:
+        :param gpu: gpu currently does not support annealing, only a constant annealing scheme beta
         :return:
         """
 
         annealing_factors = [self.beta, self.start_beta, self.end_beta, self.growth_factor]
+
+        # gpu requires specific input types
+        gpu_beta = float64(self.beta)
+        gpu_m = float64(self.m)
+        gpu_J = np.ndarray.flatten(np.ndarray.astype(self.J, "float64"))
+        gpu_h = np.ndarray.astype(self.h, "float64")
+        gpu_rand = np.random.uniform(-1, 1, Nt * self.Nm)
 
         if model is None:
             model = self.model
@@ -140,8 +149,9 @@ class pcircuit:
                 m_all, self.m = _cpsl(self.m, self.Nm, self.J, self.h, Nt, self.anneal, annealing_factors)
                 return m_all
             else:
-                m_all, self.m = _cpsl_gpu(self.m, self.Nm, self.J, self.h, self.beta, Nt, self.anneal,
-                                          annealing_factors)
+                m_all = _cpsl_gpu(gpu_m, self.Nm, gpu_J, gpu_h, gpu_beta, Nt, gpu_rand)
+                m_all = np.reshape(m_all, (Nt, self.Nm))
+                self.m = m_all[Nt-1, :]
                 return m_all
         elif model == "ppsl":
             if not gpu:
@@ -277,19 +287,19 @@ def _cpsl(m, Nm, J, h, Nt, anneal, annealing_factors):
     return m_all, m
 
 
-def _cpsl_gpu(m, Nm, J, h, beta, Nt, anneal, annealing_factors):
-    m_all = cp.zeros((Nt, Nm))
-    m = cp.asarray(m)
-    J = cp.asarray(J)
-    h = cp.asarray(h)
-    for j in range(Nt):
-        for i in range(Nm):  # np.random.permutation(Nm):
-            xx = beta * (cp.dot(m, J[:, i]) + h[i])
-            m[i] = cp.sign(random.uniform(-1, 1) - cp.tanh(xx))
-        m_all[j] = m
-    m_all = cp.asnumpy(m_all)
-    m_all[m_all < 0] = 0
-    return m_all, m
+@jit(float64[:](float64[:], int64, float64[:], float64[:], float64, int64, float64[:]), nopython=True)
+def _cpsl_gpu(m, Nm, J, h, beta, Nt, rand_vals):
+        m_all = np.zeros(Nt * Nm)  # [[0 for xx in range(a)] for yy in range(b)]
+        m = np.ascontiguousarray(m)
+        J = np.ascontiguousarray(J)
+        for j in range(int(Nt)):
+            for i in range(int(Nm)):
+                xx = -1 * beta * (np.dot(m, J[i * Nm:i * Nm + Nm]) + h[i])
+                m[i] = np.sign(rand_vals[j * Nm + i] + np.tanh(xx))
+            m_all[j * Nm:j * Nm + Nm] = m
+        m_all[m_all < 0] = 0
+        # m_all = np.reshape(m_all, (Nt, Nm))
+        return m_all
 
 
 def _ppsl(m, Nm, J, h, beta, Nt, dt, anneal, annealing_factors):
