@@ -12,11 +12,11 @@ J = [[0, -2, -2],
 h = [2, -1, -1]
 
 Nm = 3
-myp = pbit.pcircuit(J, h)
-Nt = int64(1000000)
+myp = pbit.pcircuit(J, h, model="ppsl")
+Nt = int64(100000)
 start = timer()
 m = myp.runFor(Nt, gpu=True)
-print("recieved samples: ", timer()-start)
+print("Samples generated: ", timer()-start)
 
 decicpsl = pbit.convertToBase10(m)
 histcpsl = np.zeros(2 ** Nm)

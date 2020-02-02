@@ -8,7 +8,7 @@ from numba import jit, cuda, float64, njit, int64
 
 
 class pcircuit:
-    def __init__(self, J=[[]], h=[], beta=1, Nm=0, model="cpsl", delta_t=0.01, start_beta=1, end_beta=2,
+    def __init__(self, J=[[]], h=[], beta=1, Nm=0, model="cpsl", delta_t=None, start_beta=1, end_beta=2,
                  growth_factor=1.001, anneal="constant"):
         self.J = np.array(J)
         self.h = np.array(h)
@@ -17,7 +17,10 @@ class pcircuit:
         else:
             self.Nm = len(self.J)
         self.model = model
-        self.dt = delta_t
+        if delta_t is None:
+            self.dt = 1/(2*self.Nm)
+        else:
+            self.dt = delta_t
         self.m = np.sign(np.add(np.random.rand(self.Nm) * 2, -1))
         # annealing
         self.beta = beta
@@ -159,8 +162,9 @@ class pcircuit:
                                       annealing_factors)
                 return m_all
             else:
-                m_all, self.m = _ppsl_gpu(self.m, self.Nm, self.J, self.h, self.beta, Nt, self.dt, self.anneal,
-                                          annealing_factors)
+                m_all = _ppsl_gpu(gpu_m, self.Nm, gpu_J, gpu_h, gpu_beta, Nt, self.dt, gpu_rand)
+                m_all = np.reshape(m_all, (Nt, self.Nm))
+                self.m = m_all[Nt - 1, :]
                 return m_all
         else:
             print("Error: unknown model")
@@ -316,19 +320,20 @@ def _ppsl(m, Nm, J, h, beta, Nt, dt, anneal, annealing_factors):
     return m_all, m
 
 
-def _ppsl_gpu(m, Nm, J, h, beta, Nt, dt, anneal, annealing_factors):
-    m = cp.asarray(m)
-    J = cp.asarray(J)
-    h = cp.asarray(h)
-    m_all = cp.zeros((Nt, Nm))
+# @jit(float64[:](float64[:], int64, float64[:], float64[:], float64, int64, float64, float64[:]), nopython=True)
+def _ppsl_gpu(m, Nm, J, h, beta, Nt, dt, randval):
+    m_all = np.zeros(Nt * Nm)
+    m = np.ascontiguousarray(m)
+    J = np.ascontiguousarray(J)
+    J = np.reshape(J, (Nm, Nm))
     for i in range(Nt):
-        x = cp.multiply(cp.add(cp.dot(J, m), h), -1 * beta)
-        p = cp.exp(-1 * dt * cp.exp(cp.multiply(-1 * m, x)))
-        m = cp.multiply(m, cp.sign(cp.subtract(p, cp.random.rand(Nm))))
-        m_all[i] = m
-    m_all = cp.asnumpy(m_all)
+        x = np.multiply(np.add(np.dot(J, m), h), -1 * beta)
+        p = np.exp(-1 * dt * np.exp(np.multiply(-1 * m, x)))
+        m = np.multiply(m, np.sign(np.subtract(p, np.random.rand(Nm))))
+        m_all[i * Nm:i * Nm + Nm] = m
     m_all[m_all < 0] = 0
-    return m_all, m
+    return m_all
+
 
 
 def _dist(x, y):

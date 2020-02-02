@@ -7,18 +7,18 @@ A comprehensive p-bit python package that simplifies execution of p-circuits. Se
 * [Variable Definitions](#Variable-Definitions)
 
 ## To Do
-GPU works! Running an And gate on MATLAB for 1e7 samples takes ~46s, takes ~9.8s on laptop gtx1060
-- [ ] Need to integrate gpu cpsl into pbit module, currently works as a standalone unit
+GPU works! Running an And gate on MATLAB for 1e7 samples takes ~46s, takes ~2s on laptop gtx1060
+- [x] ~~Need to integrate gpu cpsl into pbit module, currently works as a standalone unit~~ Integrated cpsl and ppsl gpu functions into pbit module
 - [ ] modify increment annealing to send an entire beta (eventually it'll be sending batches of some 1e6 beta values and recalculating
 the next batch at the end of that length)
 - [ ] add pbit.convertMatToCSV to convert matlab to python readable easily, maybe could 
 just figure out how to export mat files as csv. 
 - [x] ~~incorporate annealing (constant, linear, geometric to begin)~~ test annealing, doesn't seem to be making a difference
-- [x] extend class with draw function to draw the current p-circuit object
+- [x] ~~extend class with draw function to draw the current p-circuit object~~ pcircuit.draw()
 - [x] ~~cpsl and ppsl are not matching Boltzmann~~, error was with pbit.convertToBase10
-- [ ] convertToBase10 needs to accept either 1D array or 2D array where each row is a sample, and convert every row to base 10 
-and return a 1D array of base 10 values. 
-- [x] gpu speeds are slower than cpu speeds, need to optimize cpsl and ppsl functions to better use gpu 
+- [x] ~~convertToBase10 needs to accept either 1D array or 2D array where each row is a sample, and convert every row to base 10 
+and return a 1D array of base 10 values.~~ 
+- [x] ~~gpu speeds are slower than cpu speeds, need to optimize cpsl and ppsl functions to better use gpu~~ 1060 wrecks i7 cpu now (~60x)
 - [ ] write function that samples every Nth timestep, and returns Nt/N samples though it runs for Nt timesteps
 - [ ] introduce more post-processing functions for analysing data, maybe quantum functions
 - [ ] long term goal: incorporate fpga commands into pbit package
@@ -42,6 +42,7 @@ To get started, initialize a p-circuit with the necessary parameters following:
 * [buildRandomNetwork](#buildRandomNetwork)
 * [runFor](#runFor)
 * [getBotlzmann](#getBoltzmann)
+* [draw](#draw)
 * [Out of class methods](#Out-of-Class-Methods)
 
 
@@ -81,9 +82,12 @@ pcircuit.buildRandomNetwork(Nm, weight_type="float", J_max_weight=5, random_h=Fa
 each value defaults to those shown above. They can each be provided by the user to customize the random p-circuit setup. 
 
 ### runFor
-    m = myPcircuit.runFor(Nt)
+    m = myPcircuit.runFor(Nt, gpu=False)
 
-runFor returns an Nt * Nm matrix. Each row of m contains the state of each Nm p-bits as the p-circuit ran Nt times.
+runFor returns an Nt * Nm matrix (ex. Nm=3, [0 0 1]). Each row of m contains the state of each Nm p-bits as the p-circuit ran Nt times.
+Setting gpu to True will make use of an available Nvidia gpu to accelerate execution. 
+
+runFor will execute following the model provided when the pcircuit was constructed or that was set using setModel(). 
 
 ### getBoltzmann
     
@@ -102,6 +106,12 @@ Ex.
 prints the following for Nm = 3:  
 
 > [0.04573869 0.14532606 0.22552337 0.08341188 0.08341188 0.22552337 0.14532606 0.04573869]
+### draw
+
+    my_pcircuit.draw(labels=True)
+
+Draws the pcircuit. Dots are pbits and lines are weights. Setting labels to False can allow faster drawing and reduce clutter for 
+larger networks. 
 
 ### Out of Class Methods
 #### convertToBase10
