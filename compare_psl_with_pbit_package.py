@@ -13,7 +13,7 @@ import pbit
 np.random.seed(0)
 
 # set parameters
-Nm = 6
+Nm=3
 Nt = 100000
 I0 = 1
 d_t = 1 / (3 * Nm)
@@ -24,19 +24,19 @@ d_t = 1 / (3 * Nm)
 # np.fill_diagonal(J, 0)
 # h = np.zeros(Nm)
 
-# J = [[0, -2, -2],
-#      [-2, 0, 1],
-#      [-2, 1, 0]]
-# h = [2, -1, -1]
 
-J = [[0, -0.4407, 0, 0, 0, 0],
-     [-0.4407, 0, -0.4407, 0, 0, 0],
-     [0, -0.4407, 0, 0, 0, 0],
-     [0, 0, 0, 0, -0.4407, 0],
-     [0, 0, 0, -0.4407, 0, -0.4407],
-     [0, 0, 0, 0, -0.4407, 0]]
-h = [0, 0, 0, 0, 0, 0]
-h = np.zeros(Nm)
+J = [[0, -2, -2],
+     [-2, 0, 1],
+     [-2, 1, 0]]
+h = [2, -1, -1]
+# J = [[0, -0.4407, 0, 0, 0, 0],
+#      [-0.4407, 0, -0.4407, 0, 0, 0],
+#      [0, -0.4407, 0, 0, 0, 0],
+#      [0, 0, 0, 0, -0.4407, 0],
+#      [0, 0, 0, -0.4407, 0, -0.4407],
+#      [0, 0, 0, 0, -0.4407, 0]]
+# h = [0, 0, 0, 0, 0, 0]
+# h = np.zeros(Nm)
 
 my_pcircuit = pbit.pcircuit(J=J, h=h, beta=I0, model="cpsl", anneal="linear", start_beta=I0, end_beta=10)    # build a p-circuit
 mcpsl = my_pcircuit.runFor(Nt)                                  # run network for Nt timesteps

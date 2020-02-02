@@ -7,6 +7,10 @@ A comprehensive p-bit python package that simplifies execution of p-circuits. Se
 * [Variable Definitions](#Variable-Definitions)
 
 ## To Do
+GPU works! Running an And gate on MATLAB for 1e7 samples takes ~46s, takes ~9.8s on laptop gtx1060
+- [ ] Need to integrate gpu cpsl into pbit module, currently works as a standalone unit
+- [ ] modify increment annealing to send an entire beta (eventually it'll be sending batches of some 1e6 beta values and recalculating
+the next batch at the end of that length)
 - [ ] add pbit.convertMatToCSV to convert matlab to python readable easily, maybe could 
 just figure out how to export mat files as csv. 
 - [x] incorporate annealing (constant, linear, geometric to begin)
@@ -14,7 +18,7 @@ just figure out how to export mat files as csv.
 - [x] ~~cpsl and ppsl are not matching Boltzmann~~, error was with pbit.convertToBase10
 - [ ] convertToBase10 needs to accept either 1D array or 2D array where each row is a sample, and convert every row to base 10 
 and return a 1D array of base 10 values. 
-- [ ] gpu speeds are slower than cpu speeds, need to optimize cpsl and ppsl functions to better use gpu 
+- [x] gpu speeds are slower than cpu speeds, need to optimize cpsl and ppsl functions to better use gpu 
 - [ ] write function that samples every Nth timestep, and returns Nt/N samples though it runs for Nt timesteps
 - [ ] introduce more post-processing functions for analysing data, maybe quantum functions
 - [ ] long term goal: incorporate fpga commands into pbit package

@@ -235,7 +235,12 @@ def convertToBase10(a, inputBase=2):
     except:
         print("Input base must be larger than 0")
         return
-    arr = np.flip(np.array(a), axis=0)
+    try:
+        b = a[0]
+    except:
+        print("Error: please send array to convert")
+        return
+    arr = np.flip(np.array(a))
     length = len(arr[0]) if arr.ndim == 2 else len(arr)
     Look = inputBase ** np.arange(length)
     return np.round(np.dot(arr, Look)).astype("int")
