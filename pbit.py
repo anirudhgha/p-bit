@@ -1,9 +1,8 @@
 import random
 import numpy as np
-import cupy as cp
 import turtle
 import math
-from numba import jit, cuda, float64, njit, int64
+from numba import jit, float64, int64
 
 
 
@@ -110,7 +109,7 @@ class pcircuit:
         :param h_max_weight:
         :return:
         """
-        random.seed(seed)
+        np.random.seed(seed)
         if weight_type == "float":
             self.Nm = Nm
             self.m = np.sign(np.add(np.random.rand(Nm) * 2, -1))

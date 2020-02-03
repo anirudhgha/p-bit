@@ -9,8 +9,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 import random
 import pbit
+from timeit import default_timer as timer
 
-np.random.seed(0)
 
 # set parameters
 Nm=3
@@ -38,8 +38,8 @@ h = [2, -1, -1]
 # h = [0, 0, 0, 0, 0, 0]
 # h = np.zeros(Nm)
 
-my_pcircuit = pbit.pcircuit(J=J, h=h, beta=I0, model="cpsl", anneal="linear", start_beta=I0, end_beta=10)    # build a p-circuit
-mcpsl = my_pcircuit.runFor(Nt)                                  # run network for Nt timesteps
+my_pcircuit = pbit.pcircuit(J=J, h=h, beta=I0, model="cpsl", anneal="constant", start_beta=I0, end_beta=10)    # build a p-circuit
+mcpsl = my_pcircuit.runFor(Nt, gpu=False)                       # run network for Nt timesteps
 my_pcircuit.setModel("ppsl", dt=d_t)                            # modify the p-circuit to use the ppsl model
 mppsl = my_pcircuit.runFor(Nt)                                  # run network for Nt timesteps
 
