@@ -5,7 +5,6 @@ import math
 from numba import jit, float64, int64
 
 
-
 class pcircuit:
     def __init__(self, J=[[]], h=[], beta=1, Nm=0, model="cpsl", delta_t=None, start_beta=1, end_beta=2,
                  growth_factor=1.001, anneal="constant"):
@@ -17,7 +16,7 @@ class pcircuit:
             self.Nm = len(self.J)
         self.model = model
         if delta_t is None:
-            self.dt = 1/(2*self.Nm)
+            self.dt = 1 / (2 * self.Nm)
         else:
             self.dt = delta_t
         self.m = np.sign(np.add(np.random.rand(self.Nm) * 2, -1))
@@ -121,7 +120,7 @@ class pcircuit:
             else:
                 self.h = np.zeros((Nm))
 
-    def runFor(self, Nt, model=None, gpu=False):
+    def generate_samples(self, Nt, model=None, gpu=False, ret ='samples'):
         """
         can provide an update scheme(cpsl, ppsl) to take effect for num_steps (Nt) timesteps, otherwise, the currently set
         update scheme will take effect. If no update scheme has been selected, it will default to classical psl. Setting
@@ -149,24 +148,26 @@ class pcircuit:
         if model == "cpsl":
             if not gpu:
                 m_all, self.m = _cpsl(self.m, self.Nm, self.J, self.h, Nt, self.anneal, annealing_factors)
-                return m_all
             else:
                 m_all = _cpsl_gpu(gpu_m, self.Nm, gpu_J, gpu_h, gpu_beta, Nt, gpu_rand)
                 m_all = np.reshape(m_all, (Nt, self.Nm))
-                self.m = m_all[Nt-1, :]
-                return m_all
+                self.m = m_all[Nt - 1, :]
         elif model == "ppsl":
             if not gpu:
                 m_all, self.m = _ppsl(self.m, self.Nm, self.J, self.h, self.beta, Nt, self.dt, self.anneal,
                                       annealing_factors)
-                return m_all
             else:
                 m_all = _ppsl_gpu(gpu_m, self.Nm, gpu_J, gpu_h, gpu_beta, Nt, self.dt, gpu_rand)
                 m_all = np.reshape(m_all, (Nt, self.Nm))
                 self.m = m_all[Nt - 1, :]
-                return m_all
         else:
             print("Error: unknown model")
+
+        if ret == 'samples':
+            return m_all
+        elif ret == 'decimal':
+            return bi_arr2de(m_all)
+
 
     def draw(self, labels=True):
         """
@@ -236,12 +237,39 @@ class pcircuit:
         # hold drawing until click
         turtle.exitonclick()
 
+    def load(self, name=None):
+        if name is None:
+            print("ERROR: no data-name specified")
+            return
+        if name == "and":
+            self.J = np.array([[0, -2, -2],
+                               [-2, 0, 1],
+                               [-2, 1, 0]])
+            self.h = np.array([2, -1, -1])
+            self.Nm = 3
+        elif name == "8q3r":
+            self.J = np.array([[0, -0.4407, 0, 0, 0, 0],
+                               [-0.4407, 0, -0.4407, 0, 0, 0],
+                               [0, -0.4407, 0, 0, 0, 0],
+                               [0, 0, 0, 0, -0.4407, 0],
+                               [0, 0, 0, -0.4407, 0, -0.4407],
+                               [0, 0, 0, 0, -0.4407, 0]])
+            self.h = np.zeros(6)
+            self.Nm = 6
+        elif name == "not":
+            self.J = np.array([[0,1],
+                               [1,0]])
+            self.h = np.zeros(2)
+            self.Nm = 2
 
-def convertToBase10(a, inputBase=2):
+        self.m = np.sign(np.add(np.random.rand(self.Nm) * 2, -1))
+
+
+def bi_arr2de(a, inputBase=2):
     try:
         b = a[0]
     except IndexError:
-        print("Empty array sent to convertToBase10 function")
+        print("Empty array sent to bi_arr2de function")
         return
     try:
         inputBase > 0
@@ -292,17 +320,17 @@ def _cpsl(m, Nm, J, h, Nt, anneal, annealing_factors):
 
 @jit(float64[:](float64[:], int64, float64[:], float64[:], float64, int64, float64[:]), nopython=True)
 def _cpsl_gpu(m, Nm, J, h, beta, Nt, rand_vals):
-        m_all = np.zeros(Nt * Nm)  # [[0 for xx in range(a)] for yy in range(b)]
-        m = np.ascontiguousarray(m)
-        J = np.ascontiguousarray(J)
-        for j in range(int(Nt)):
-            for i in range(int(Nm)):
-                xx = -1 * beta * (np.dot(m, J[i * Nm:i * Nm + Nm]) + h[i])
-                m[i] = np.sign(rand_vals[j * Nm + i] + np.tanh(xx))
-            m_all[j * Nm:j * Nm + Nm] = m
-        m_all[m_all < 0] = 0
-        # m_all = np.reshape(m_all, (Nt, Nm))
-        return m_all
+    m_all = np.zeros(Nt * Nm)  # [[0 for xx in range(a)] for yy in range(b)]
+    m = np.ascontiguousarray(m)
+    J = np.ascontiguousarray(J)
+    for j in range(int(Nt)):
+        for i in range(int(Nm)):
+            xx = -1 * beta * (np.dot(m, J[i * Nm:i * Nm + Nm]) + h[i])
+            m[i] = np.sign(rand_vals[j * Nm + i] + np.tanh(xx))
+        m_all[j * Nm:j * Nm + Nm] = m
+    m_all[m_all < 0] = 0
+    # m_all = np.reshape(m_all, (Nt, Nm))
+    return m_all
 
 
 def _ppsl(m, Nm, J, h, beta, Nt, dt, anneal, annealing_factors):
@@ -319,7 +347,7 @@ def _ppsl(m, Nm, J, h, beta, Nt, dt, anneal, annealing_factors):
     return m_all, m
 
 
-# @jit(float64[:](float64[:], int64, float64[:], float64[:], float64, int64, float64, float64[:]), nopython=True)
+@jit(float64[:](float64[:], int64, float64[:], float64[:], float64, int64, float64, float64[:]), nopython=True)
 def _ppsl_gpu(m, Nm, J, h, beta, Nt, dt, randval):
     m_all = np.zeros(Nt * Nm)
     m = np.ascontiguousarray(m)
@@ -332,7 +360,6 @@ def _ppsl_gpu(m, Nm, J, h, beta, Nt, dt, randval):
         m_all[i * Nm:i * Nm + Nm] = m
     m_all[m_all < 0] = 0
     return m_all
-
 
 
 def _dist(x, y):

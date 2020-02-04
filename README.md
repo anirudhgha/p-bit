@@ -8,6 +8,10 @@ A comprehensive p-bit python package that simplifies execution of p-circuits. Se
 
 ## To Do
 GPU works! Running an And gate on MATLAB for 1e7 samples takes ~46s, takes ~2s on laptop gtx1060
+- [ ] update readme with new load() function
+- [x] ~~make a sublcass of pbit which contains an assortment of J/h's already stored~~
+- [ ] see how to import c++ functions into python to be able to communicate with aws fpga, check out http://www.swig.org/papers/PyTutorial98/PyTutorial98.pdf
+- [ ] finish quantum gate copy of matlab code
 - [ ] Option of running without returning every intermediate state (only final)
 - [ ] Option to sample every Nth timestep, and returns Nt/N samples though it runs for Nt timesteps
 - [x] ~~Need to integrate gpu cpsl into pbit module, currently works as a standalone unit~~ Integrated cpsl and ppsl gpu functions into pbit module
@@ -22,7 +26,6 @@ just figure out how to export mat files as csv.
 and return a 1D array of base 10 values.~~ 
 - [x] ~~gpu speeds are slower than cpu speeds, need to optimize cpsl and ppsl functions to better use gpu~~ 1060 wrecks i7 cpu now (~60x)
 - [ ] introduce more post-processing functions for analysing data, maybe quantum functions
-- [ ] long term goal: incorporate fpga commands into pbit package
 - [ ] possible bug in draw function (_not_drawn() does not correctly keep track of drawn labels)
 
 ## Getting Started

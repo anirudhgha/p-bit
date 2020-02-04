@@ -13,9 +13,9 @@ myp = pbit.pcircuit(J, h)
 
 # run p-circuit
 myp.draw()
-m_list = myp.runFor(1000000, gpu=True)
+m_list = myp.generate_samples(1000000, gpu=True)
 
 # plot
-m_list = pbit.convertToBase10(m_list)
+m_list = pbit.bi_arr2de(m_list)
 plt.hist(m_list)
 plt.show()
