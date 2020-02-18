@@ -8,9 +8,13 @@ A comprehensive p-bit python package that simplifies execution of p-circuits. Se
 
 ## To Do
 GPU works! Running an And gate on MATLAB for 1e7 samples takes ~46s, takes ~2s on laptop gtx1060
+- [ ] Make a live update addition to generate_samples which lets you see color-flipping checkerboard of the p-bits for nearest neighbor, or color-flipping squares
+arranged in a circle for any other topology
 - [ ] update readme with new load() function
 - [x] ~~make a sublcass of pbit which contains an assortment of J/h's already stored~~
 - [ ] see how to import c++ functions into python to be able to communicate with aws fpga, check out http://www.swig.org/papers/PyTutorial98/PyTutorial98.pdf
+- [ ] add shor's algorithm example to possible load function options
+- [ ] overhaul load function to allow selecting preloading variable size networks, including using shors algorithm for dividing arbitrary numbers
 - [ ] finish quantum gate copy of matlab code
 - [ ] Option of running without returning every intermediate state (only final)
 - [ ] Option to sample every Nth timestep, and returns Nt/N samples though it runs for Nt timesteps

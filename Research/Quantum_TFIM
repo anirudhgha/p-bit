@@ -6,7 +6,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 # build p-circuit
-J = my_data = np.genfromtxt('Jquanta.txt', delimiter=',')
+J = my_data = np.genfromtxt('5q3r.txt', delimiter=',')
+
 h = np.zeros(15)
 Nt = 100000
 myp = pbit.pcircuit(J, h)

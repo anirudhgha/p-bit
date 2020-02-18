@@ -77,7 +77,7 @@ class pcircuit:
 
     def getBoltzmann(self):
         """
-         Retrieve the boltzmann statistics for a given p-circuit. Returns a normalized-to-1 np array of length 2^Nm with
+        Retrieve the boltzmann statistics for a given p-circuit. Returns a normalized-to-1 np array of length 2^Nm with
         the exact probability of occupation for each state. Note, for Nm > 15, it may take a very long time for
         getBoltzmann() to execute. It must calculate a probability for each of 2^Nm states.
         :return:
@@ -163,9 +163,9 @@ class pcircuit:
         else:
             print("Error: unknown model")
 
-        if ret == 'samples':
+        if ret == 'samples' or ret == 'sample' or ret == 'b' or ret == 'binary':
             return m_all
-        elif ret == 'decimal':
+        elif ret == 'decimal' or ret == 'd' or ret == 'deci' or ret == 'decimals':
             return bi_arr2de(m_all)
 
 
@@ -248,6 +248,10 @@ class pcircuit:
             self.h = np.array([2, -1, -1])
             self.Nm = 3
         elif name == "8q3r":
+             self.J = np.genfromtxt('5q3r.txt', delimiter=',')
+             self.h = np.zeros(24)
+             self.Nm = 24
+        elif name == "2q3r":
             self.J = np.array([[0, -0.4407, 0, 0, 0, 0],
                                [-0.4407, 0, -0.4407, 0, 0, 0],
                                [0, -0.4407, 0, 0, 0, 0],
@@ -287,9 +291,9 @@ def bi_arr2de(a, inputBase=2):
     return np.round(np.dot(arr, Look)).astype("int")
 
 
-def errorMSE(predicted, exact):
-    return np.sqrt(np.divide(np.sum(np.sum((np.abs(np.subtract(exact, predicted))) ** 2)),
-                             np.sum(np.sum((np.abs(exact)) ** 2))))
+def errorMSE(predicted_arr, exact_arr):
+    return np.sqrt(np.divide(np.sum(np.sum((np.abs(np.subtract(exact_arr, predicted_arr))) ** 2)),
+                             np.sum(np.sum((np.abs(exact_arr)) ** 2))))
 
 
 def _incrementAnnealing(cur_beta, anneal, annealing_factors, Nt, start=False):
