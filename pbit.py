@@ -95,9 +95,9 @@ class pcircuit:
         all_state = np.divide(all_state, np.sum(all_state))
         return np.array(all_state)
 
-    def buildRandomNetwork(self, Nm, seed=0, weight_type="float", J_max_weight=5, random_h=False, h_max_weight=5):
+    def load_random(self, Nm, seed=0, weight_type="float", J_max_weight=5, random_h=False, h_max_weight=5):
         """
-        build a random p-circuit. By default, only a random J will be made. If random_h is set to True, then
+        load random weights into the p-circuit. By default, only a random J will be made. If random_h is set to True, then
         a random h will also be set with maximum values set by h_max_weight.
         weight_type can be float, int.
         :param Nm:
@@ -120,7 +120,7 @@ class pcircuit:
             else:
                 self.h = np.zeros((Nm))
 
-    def generate_samples(self, Nt, model=None, gpu=False, ret ='samples'):
+    def generate_samples(self, Nt, model=None, gpu=False, ret_base ='binary'):
         """
         can provide an update scheme(cpsl, ppsl) to take effect for num_steps (Nt) timesteps, otherwise, the currently set
         update scheme will take effect. If no update scheme has been selected, it will default to classical psl. Setting
@@ -128,19 +128,22 @@ class pcircuit:
 
         Annealing options: constant (beta), linear (beta_start, beta_end),
         geometric (beta_start, beta_end, growth_factor)
-        :param Nt:
-        :param model:
+        :param Nt: number of samples to generate (length of time to 'run' network if you collect 1 sample per time unit)
+        :param model: cpsl or ppsl
         :param gpu: gpu currently does not support annealing, only a constant annealing scheme beta
         :return:
         """
-
+        if Nt == 0:
+            print('Error: Nt must be greater than 0')
+            return
         annealing_factors = [self.beta, self.start_beta, self.end_beta, self.growth_factor]
 
         # gpu requires specific input types
         gpu_beta = float64(self.beta)
         gpu_m = float64(self.m)
         gpu_J = np.ndarray.flatten(np.ndarray.astype(self.J, "float64"))
-        gpu_h = np.ndarray.astype(self.h, "float64")
+        gpu_h = np.ndarray.flatten(np.ndarray.astype(self.h, "float64"))
+
         gpu_rand = np.random.uniform(-1, 1, Nt * self.Nm)
 
         if model is None:
@@ -163,9 +166,9 @@ class pcircuit:
         else:
             print("Error: unknown model")
 
-        if ret == 'samples' or ret == 'sample' or ret == 'b' or ret == 'binary':
+        if ret_base == 'samples' or ret_base == 'sample' or ret_base == 'b' or ret_base == 'binary':
             return m_all
-        elif ret == 'decimal' or ret == 'd' or ret == 'deci' or ret == 'decimals':
+        elif ret_base == 'decimal' or ret_base == 'd' or ret_base == 'deci' or ret_base == 'decimals':
             return bi_arr2de(m_all)
 
 
@@ -236,6 +239,11 @@ class pcircuit:
                         drawn.append([i, j])
         # hold drawing until click
         turtle.exitonclick()
+    def load_image(self, file_name=None):
+        import image
+        if file_name is None:
+            print("ERROR: no filename specified")
+
 
     def load(self, name=None):
         if name is None:
@@ -285,6 +293,7 @@ def bi_arr2de(a, inputBase=2):
     except:
         print("Error: please send array to convert")
         return
+    a[a < 0] = 0
     arr = np.flip(np.array(a))
     length = len(arr[0]) if arr.ndim == 2 else len(arr)
     Look = inputBase ** np.arange(length)

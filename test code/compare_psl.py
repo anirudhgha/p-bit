@@ -30,8 +30,7 @@ def boltzmann(J, H, Nt, Nm, energy_boltz):
         state.extend(b)
         state = np.array(state)  # convert to nd.array
         state = np.subtract(2*state, 1)  # make [-1,1] from [0,1]
-        energy_boltz[cc] = I0 * (np.dot(state, H) + np.multiply(0.5, np.dot(np.dot(state, J),
-                                                                            state)))
+        energy_boltz[cc] = I0 * (np.dot(state, H) + np.multiply(0.5, np.dot(np.dot(state, J), state)))
     if np.mod(cc, (int(pow(2, Nm) / 5))) == 0:
         print(pow(2, Nm) - cc)
     energy_boltz = np.subtract(energy_boltz, np.sum(energy_boltz))
