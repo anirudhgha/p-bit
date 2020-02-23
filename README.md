@@ -31,38 +31,71 @@ arranged in a circle for any other topology, https://stackoverflow.com/questions
 just figure out how to export mat files as csv.~~ EXISTS IN SCIPY: See scipy example in shor's algorithm
 - [x] ~~incorporate annealing (constant, linear, geometric to begin)~~ test annealing, doesn't seem to be making a difference
 - [x] ~~extend class with draw function to draw the current p-circuit object~~ pcircuit.draw()
-- [x] ~~cpsl and ppsl are not matching Boltzmann~~, error was with pbit.convertToBase10
-- [x] ~~convertToBase10 needs to accept either 1D array or 2D array where each row is a sample, and convert every row to base 10 
+- [x] ~~cpsl and ppsl are not matching Boltzmann~~, error was with pbit.bi_arr2de
+- [x] ~~bi_arr2de needs to accept either 1D array or 2D array where each row is a sample, and convert every row to base 10 
 and return a 1D array of base 10 values.~~ 
 - [x] ~~gpu speeds are slower than cpu speeds, need to optimize cpsl and ppsl functions to better use gpu~~ 1060 wrecks i7 cpu now (~60x)
 - [ ] introduce more post-processing functions for analysing data, maybe quantum functions
 - [ ] possible bug in draw function (_not_drawn() does not correctly keep track of drawn labels). Draw function isn't too reliable as is, may need to update it to make it robust. 
+
 ## Getting Started
-To get started, initialize a p-circuit with the necessary parameters following:
+P-circuits are quite simple to work with. The general use flow follows the same pattern for any use case.  
+
+__Step 1)__ Initialize a p-circuit, either with J and h or without if you have yet to load some weights, following 
+If you don't have a specific J and h...
+```python 
+my_pcircuit = pbit.pcircuit()
+```
+If you know your J and h
+```python 
+my_pcircuit = pbit.pcircuit(J = your_2D_J_Array, h = your_1D_h_vector)
+```
+The full initialization is provided below. For any parameter left empty, that parameter will be initialized with the provided value. 
 ```python
- my_pcircuit = pbit.pcircuit(Nm=0, J=[[]], h=[], beta=1, model="cpsl", delta_t=0.01):
+my_pcircuit = pbit.pcircuit(Nm=0, J=[[]], h=[], beta=1, model="cpsl", delta_t=0.01):
 ``` 
-* Nm - Number of p-bits
-* J - A 2D adjacency matrix of the network, also known as the weight matrix
-* h - A 1D vector of biases
-* beta - When running the p-circuit, the input to p-bits will be scaled up by beta before being fed into the activation function. 
-* model - A parallel psl model ("ppsl") and the classical psl model (default "cpsl") are supported. 
-  
+See [Variable Definitions](#Variable-Definitions) for what each variable means. The basics of what constitutes a p-circuit is explained in detail at https://www.purdue.edu/p-bit/blog.html.  
+
+__Step 2:__ Use generate samples to run the network for some number of timesteps and provide the state of the network at each of those timesteps. 
+```python
+samples = my_pcircuit.generate_samples(Nt=100000)
+```  
+See the full function definition [below](#generate_samples)  
+
+__Step 3)__ Visualize the results. Histograms are a great way to see which states your network preferred over the course of its run. To plot a histogram, it is important to have generate_samples return a decimal value for each sample...
+```python
+samples = my_pcircuit.generate_samples(Nt=100000, ret_base='decimal')
+plt.hist(samples)
+plt.show()
+OR DO...
+
+samples = my_pcircuit.generate_samples(Nt=100000)
+decimal_samples = pbit.bi_arr2de(samples)
+plt.hist(samples)
+plt.show()
+```
+
+Another visualization technique is to plot the heatmap of the resulting samples from generate_samples. A heatmap gives a color for each 1 in a sample and a different color to each 0 in a sample. 
+
+
 ## Methods
 * [set variable state](#setWeights)
 * [get variable state](#getWeights)
 * [reset](#reset)
-* [buildRandomNetwork](#buildRandomNetwork)
-* [runFor](#runFor)
+* [load_random](#load_random)
+* [generate_samples](#generate_samples)
 * [getBotlzmann](#getBoltzmann)
 * [draw](#draw)
-* [Out of class methods](#Out-of-Class-Methods)
+* [binary array to decimal](#bi_arr2de)
+* [animated heatmap](#live_heatmap)
 
 
 ### setWeights
     my_pcircuit.setWeights(J,h)
+Set the weights J and h
 ### setSize
     my_pcircuit.setSize(Nm)
+Set Nm
 ### setBeta
     my_pcircuit.setBeta(beta)
 ### setModel
@@ -86,21 +119,36 @@ returns "cpsl" or "ppsl"
 returns m
 ### reset
     my_pcircuit.reset()
-resets the internal m state, randomizing each p-bit state to +-1.
+resets the internal m state, randomizing each p-bit in the Nm-size p-circuit to +-1.
 
-### buildRandomNetwork
+### load_random
 ```python
-my_pcircuit.buildRandomNetwork(Nm, weight_type="float", J_max_weight=5, random_h=False, h_max_weight=5)
+my_pcircuit.load_random(Nm, weight_type="float", J_max_weight=5, random_h=False, h_max_weight=5)
 ```
 each value defaults to those shown above. They can each be provided by the user to customize the random p-circuit setup. 
 
-### runFor
-    m = myPcircuit.runFor(Nt, gpu=False)
+use case, creating a randomly connected 20 p-bit network:
+```python
+my_pcircuit = pbit.pcircuit()
+my_pcircuit.load_random(20)
+```
 
-runFor returns an Nt * Nm matrix (ex. Nm=3, [0 0 1]). Each row of m contains the state of each Nm p-bits as the p-circuit ran Nt times.
+note, all load_random networks are fully connected, no weight is set to 0.
+
+### load_image_as_ground_state
+```python
+    myp.load_image_as_ground_state("desired_ground_state.png")
+```
+Sets the image desired_ground_state.png as the ground state for the p-circuit. There exist a set (infinite technically) of weights for which the global minimum is the provided pattern. This function calculates such a weight matrix from the image. Any image will be grayscaled, and converted to black and white before setting the weight. 
+
+
+### generate_samples
+    m = myPcircuit.generate_samples(Nt, gpu=False)
+
+generate_samples returns an Nt * Nm matrix (ex. Nm=3, [0 0 1]). Each row of m contains the state of each Nm p-bits as the p-circuit ran Nt times.
 Setting gpu to True will make use of an available Nvidia gpu to accelerate execution. 
 
-runFor will execute following the model provided when the pcircuit was constructed or that was set using setModel(). 
+generate_samples will execute following the model provided when the pcircuit was constructed or that was set using setModel(). 
 
 ### getBoltzmann
     
@@ -127,22 +175,43 @@ Draws the pcircuit. Dots are pbits and lines are weights. Setting labels to Fals
 larger networks. 
 
 ### Out of Class Methods
-#### convertToBase10
-    b = convertToBase10(a, inputBase=2)
-A handy function for converting p-bit output from runFor into decimal values that can be plotted in a histogram. Takes as input a list or array of binary values ex. [1,0,0,1,0] and returns a decimal integer ex. 18.
+#### bi_arr2de
+    b = bi_arr2de(a, inputBase=2)
+A handy function for converting p-bit output from generate_samples into decimal values that can be plotted in a histogram. Takes as input a list or array of binary values ex. [1,0,0,1,0] and returns a decimal integer ex. 18.
 
 possible use case:
 ```python
-m = pcircuit.runFor(Nt)
+m = pcircuit.generate_samples(Nt)
 for i in range(Nt):
-    decimal_states[i] = pbit.convertToBase10(m[i, :])
+    decimal_states[i] = pbit.bi_arr2de(m[i, :])
 ```
+#### live_heatmap
+```python
+pbit.live_heatmap(samples, num_samples_to_plot=Nt, hold_time=Nm)
+```
+
+Plot an animated sequence of heatmaps that shows how the network changed over time. The input takes a binary (0,1) array with some Nt rows and some Nm columns. The function finds the most 'square' representation of Nm p-bits and aranges the heatmap such that each pixel is a p-bit. When the function is run, black is 0 and gold is 1.  
+
+Example use case: 
+```python
+myp = pbit.pcircuit()
+myp.load_image_as_ground_state("32x32.png")
+samples = myp.generate_samples(Nt=1000)
+pbit.live_heatmap(samples, num_samples_to_plot=50, hold_time=0.2)
+```
+
+#### errorMSE
+```python
+error = pbit.errorMSE(arr1, arr2)
+```
+finds the mean squared error between two 1D arrays. 
 
 ## Variable Definitions
 
-* ##### Nm - Number of p-bits
-* ##### J - A 2D adjacency matrix of the network, also known as the weight matrix
-* ##### h - A 1D vector of biases
-* ##### beta - When running the p-circuit, the input to p-bits will be scaled up by beta before being fed into the activation function. 
-* ##### model - A parallel psl model ("ppsl") and the classical psl model are supported. 
-
+* __Nm__ - Number of p-bits
+* __J__ - A 2D adjacency matrix of the network, also known as the weight matrix
+* __h__ - A 1D vector of biases
+* __beta__ - When running the p-circuit, the input to p-bits will be scaled up by beta before being fed into the activation function. This controls the 'temperature' of the network.
+* __model__ - A parallel psl model ("ppsl") and the classical psl model("cpsl") are supported. The model defines which set of algorithms are used to update the p-bits. 
+* __Nt__ - number of timesteps a network is to run for (i.e number of samples to generate)
+* __delta_t__ - percent of p-bits to update per timestep (i.e d_t=0.3 means each p-bit has a 30% chance of updating (could flip or not flip) per timestep)
