@@ -3,8 +3,9 @@ A comprehensive p-bit python package that simplifies execution of p-circuits. Se
 
 * [To Do](#To-Do)
 * [Getting Started](#Getting-Started)
-* [Methods](#Methods)
 * [Variable Definitions](#Variable-Definitions)
+* [Methods](#Methods)
+
 
 ## To Do
 GPU works! Running an And gate on MATLAB for 1e7 samples takes ~46s, takes ~2s on laptop gtx1060
@@ -52,7 +53,8 @@ my_pcircuit = pbit.pcircuit(J = your_2D_J_Array, h = your_1D_h_vector)
 ```
 The full initialization is provided below. For any parameter left empty, that parameter will be initialized with the provided value. 
 ```python
-my_pcircuit = pbit.pcircuit(Nm=0, J=[[]], h=[], beta=1, model="cpsl", delta_t=0.01):
+my_pcircuit = pbit.pcircuit(self, J=[[]], h=[], beta=1, Nm=0, model="cpsl", delta_t=None, start_beta=1, end_beta=2,
+                 growth_factor=1.001, anneal="constant"):
 ``` 
 See [Variable Definitions](#Variable-Definitions) for what each variable means. The basics of what constitutes a p-circuit is explained in detail at https://www.purdue.edu/p-bit/blog.html.  
 
@@ -75,7 +77,17 @@ plt.hist(samples)
 plt.show()
 ```
 
-Another visualization technique is to plot the heatmap of the resulting samples from generate_samples. A heatmap gives a color for each 1 in a sample and a different color to each 0 in a sample. 
+Another visualization technique is to plot the heatmap of the resulting samples from generate_samples. A heatmap gives a color for each 1 in a sample and a different color to each 0 in a sample. See the [heatmap function](#live_heatmap). 
+
+## Variable Definitions
+
+* __Nm__ - Number of p-bits
+* __J__ - A 2D adjacency matrix of the network, also known as the weight matrix
+* __h__ - A 1D vector of biases
+* __beta__ - When running the p-circuit, the input to p-bits will be scaled up by beta before being fed into the activation function. This controls the 'temperature' of the network.
+* __model__ - A parallel psl model ("ppsl") and the classical psl model("cpsl") are supported. The model defines which set of algorithms are used to update the p-bits. 
+* __Nt__ - number of timesteps a network is to run for (i.e number of samples to generate)
+* __delta_t__ - percent of p-bits to update per timestep (i.e d_t=0.3 means each p-bit has a 30% chance of updating (could flip or not flip) per timestep). Only applicable to the ppsl model, since cpsl updates each p-bit sequentially. 
 
 
 ## Methods
@@ -88,6 +100,7 @@ Another visualization technique is to plot the heatmap of the resulting samples 
 * [draw](#draw)
 * [binary array to decimal](#bi_arr2de)
 * [animated heatmap](#live_heatmap)
+* [load image as ground state](#load_image_as_ground_state)
 
 
 ### setWeights
@@ -206,12 +219,3 @@ error = pbit.errorMSE(arr1, arr2)
 ```
 finds the mean squared error between two 1D arrays. 
 
-## Variable Definitions
-
-* __Nm__ - Number of p-bits
-* __J__ - A 2D adjacency matrix of the network, also known as the weight matrix
-* __h__ - A 1D vector of biases
-* __beta__ - When running the p-circuit, the input to p-bits will be scaled up by beta before being fed into the activation function. This controls the 'temperature' of the network.
-* __model__ - A parallel psl model ("ppsl") and the classical psl model("cpsl") are supported. The model defines which set of algorithms are used to update the p-bits. 
-* __Nt__ - number of timesteps a network is to run for (i.e number of samples to generate)
-* __delta_t__ - percent of p-bits to update per timestep (i.e d_t=0.3 means each p-bit has a 30% chance of updating (could flip or not flip) per timestep)
