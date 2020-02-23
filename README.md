@@ -8,6 +8,8 @@ A comprehensive p-bit python package that simplifies execution of p-circuits. Se
 
 ## To Do
 GPU works! Running an And gate on MATLAB for 1e7 samples takes ~46s, takes ~2s on laptop gtx1060
+- [ ] talk with fariah to incorporate new ppsl model
+- [ ] talk with jan to incorporate learning into the package
 - [ ] implement annealing properly, it doesn't work currently. modify increment annealing to send an entire beta (eventually it'll be sending batches of some 1e6 beta values and recalculating
 the next batch at the end of that length)
 - [ ] make J optimal for k-nearest neighbor setups by having Nm rows and each row only has k columns, one for each neighbor, may require modifying cpsl and ppsl functions
