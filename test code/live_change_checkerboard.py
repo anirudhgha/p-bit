@@ -5,7 +5,7 @@ import pbit
 
 
 
-orig = Image.open('32x32.png')
+orig = Image.open('module testers/32x32.png')
 baw = orig.convert('1')
 
 width, height = baw.size

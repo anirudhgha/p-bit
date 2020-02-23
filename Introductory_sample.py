@@ -16,7 +16,7 @@ myp = pbit.pcircuit(J, h)  # or, use myp.load('and')
 # run p-circuit
 myp.draw()
 start = timer()
-samples = myp.generate_samples(100000, gpu=True, ret_base='decimal')
+samples = myp.generate_samples(100000, gpu=False, ret_base='binary')
 print("Generated samples in ", timer() - start, 's.')
 
 # plot

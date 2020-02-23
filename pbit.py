@@ -32,8 +32,8 @@ class pcircuit:
         return "I am a p-circuit with " + str(self.Nm) + " p-bits."
 
     def setWeights(self, J, h):
-        self.J = J
-        self.h = h
+        self.J = np.array(J)
+        self.h = np.array(h)
 
     def setSize(self, num_pbits):
         self.Nm = num_pbits
@@ -143,7 +143,7 @@ class pcircuit:
         gpu_m = float64(self.m)
         gpu_J = np.ndarray.flatten(np.ndarray.astype(self.J, "float64"))
         gpu_h = np.ndarray.flatten(np.ndarray.astype(self.h, "float64"))
-
+        gpu_Nm = np.int64(self.Nm)
         gpu_rand = np.random.uniform(-1, 1, Nt * self.Nm)
 
         if model is None:
@@ -152,7 +152,7 @@ class pcircuit:
             if not gpu:
                 m_all, self.m = _cpsl(self.m, self.Nm, self.J, self.h, Nt, self.anneal, annealing_factors)
             else:
-                m_all = _cpsl_gpu(gpu_m, self.Nm, gpu_J, gpu_h, gpu_beta, Nt, gpu_rand)
+                m_all = _cpsl_gpu(gpu_m, gpu_Nm, gpu_J, gpu_h, gpu_beta, Nt, gpu_rand)
                 m_all = np.reshape(m_all, (Nt, self.Nm))
                 self.m = m_all[Nt - 1, :]
         elif model == "ppsl":
@@ -160,7 +160,7 @@ class pcircuit:
                 m_all, self.m = _ppsl(self.m, self.Nm, self.J, self.h, self.beta, Nt, self.dt, self.anneal,
                                       annealing_factors)
             else:
-                m_all = _ppsl_gpu(gpu_m, self.Nm, gpu_J, gpu_h, gpu_beta, Nt, self.dt, gpu_rand)
+                m_all = _ppsl_gpu(gpu_m, gpu_Nm, gpu_J, gpu_h, gpu_beta, Nt, self.dt, gpu_rand)
                 m_all = np.reshape(m_all, (Nt, self.Nm))
                 self.m = m_all[Nt - 1, :]
         else:
@@ -175,7 +175,7 @@ class pcircuit:
     def draw(self, labels=True):
         """
         Draw out your pcircuit!
-        :param labels:
+        :param labels: turn labels off to skip drawing out the weights, which slow down the draw
         :return:
         """
         if self.Nm == 0:
@@ -239,11 +239,53 @@ class pcircuit:
                         drawn.append([i, j])
         # hold drawing until click
         turtle.exitonclick()
-    def load_image(self, file_name=None):
-        import image
+    def load_image_as_ground_state(self, file_name=None):
+        import PIL.Image as Image
         if file_name is None:
             print("ERROR: no filename specified")
+            return
+        orig = Image.open('32x32.png')
+        baw = orig.convert('1') #convert to black and white (baw)
+        width, height = baw.size
+        if width != height:
+            print("ERROR: image must be a square")
+            return
+        J_temp = np.ones((height * width, height * width))
 
+        # opposite pixels get weight of 1
+        for row in range(height):
+            for col in range(width):
+                cur = row * width + col
+                if col + 1 < width - 1:
+                    right = row * width + (col + 1)
+                else:
+                    right = 0
+                if col - 1 > 0:
+                    left = row * width + (col - 1)
+                else:
+                    left = width - 1
+                if row - 1 > 0:
+                    up = (row - 1) * width + col
+                else:
+                    up = height - 1
+                if row + 1 < height - 1:
+                    down = (row + 1) * width + col
+                else:
+                    down = 0
+                if col + 1 < width and baw.getpixel((col, row)) != baw.getpixel((col + 1, row)):
+                    J_temp[cur, right] = -1
+                if row + 1 < height and baw.getpixel((col, row)) != baw.getpixel((col, row + 1)):
+                    J_temp[cur, down] = -1
+                if col - 1 > 0 and baw.getpixel((col, row)) != baw.getpixel((col - 1, row)):
+                    J_temp[cur, left] = -1
+                if row - 1 > 0 and baw.getpixel((col, row)) != baw.getpixel((col, row - 1)):
+                    J_temp[cur, up] = -1
+        h = np.zeros(width*height)
+
+        self.J = np.array(J_temp)
+        self.h = np.array(h)
+        self.Nm = np.int64(self.J.shape[0])
+        self.reset() # sets up an initial m state
 
     def load(self, name=None):
         if name is None:
@@ -255,10 +297,12 @@ class pcircuit:
                                [-2, 1, 0]])
             self.h = np.array([2, -1, -1])
             self.Nm = 3
+            self.reset()
         elif name == "8q3r":
              self.J = np.genfromtxt('5q3r.txt', delimiter=',')
              self.h = np.zeros(24)
              self.Nm = 24
+             self.reset()
         elif name == "2q3r":
             self.J = np.array([[0, -0.4407, 0, 0, 0, 0],
                                [-0.4407, 0, -0.4407, 0, 0, 0],
@@ -268,14 +312,13 @@ class pcircuit:
                                [0, 0, 0, 0, -0.4407, 0]])
             self.h = np.zeros(6)
             self.Nm = 6
+            self.reset()
         elif name == "not":
             self.J = np.array([[0,1],
                                [1,0]])
             self.h = np.zeros(2)
             self.Nm = 2
-
-        self.m = np.sign(np.add(np.random.rand(self.Nm) * 2, -1))
-
+            self.reset()
 
 def bi_arr2de(a, inputBase=2):
     try:
@@ -303,6 +346,38 @@ def bi_arr2de(a, inputBase=2):
 def errorMSE(predicted_arr, exact_arr):
     return np.sqrt(np.divide(np.sum(np.sum((np.abs(np.subtract(exact_arr, predicted_arr))) ** 2)),
                              np.sum(np.sum((np.abs(exact_arr)) ** 2))))
+
+def live_heatmap(m_all, num_samples_to_plot=None, hold_time=0.5):
+    import matplotlib.pyplot as plt
+    import matplotlib as mpl
+    from functools import reduce
+
+    Nt = m_all.shape[0]  # num rows in m_all is num samples taken
+    Nm = m_all.shape[1]
+
+    #find the factors of n to get the most "square" display we can get
+    factors = list(reduce(list.__add__,
+                          ([i, Nm // i] for i in range(1, int(Nm ** 0.5) + 1) if Nm % i == 0)))
+    width = factors[-2]
+    height = factors[-1]
+
+    if num_samples_to_plot is None:
+        num_samples_to_plot = Nm
+    m_live = m_all[0:Nt:int(Nt / num_samples_to_plot)]
+
+    cmap = mpl.colors.ListedColormap(['black', 'goldenrod'])
+
+    # create the figure
+    fig = plt.figure()
+    ax = fig.add_subplot(111)
+    im = ax.imshow(m_all[0].reshape((height, width)), cmap=cmap)
+    plt.show(block=False)
+
+    # draw some data in loop
+    for i in range(num_samples_to_plot):
+        plt.pause(hold_time)
+        im.set_array(m_live[i].reshape((height, width)))
+        fig.canvas.draw()
 
 
 def _incrementAnnealing(cur_beta, anneal, annealing_factors, Nt, start=False):
@@ -384,3 +459,5 @@ def _not_drawn(i, j, drawn):
         if math.isclose(i, ii[0]) and math.isclose(j, ii[1]):
             return False
     return True
+
+

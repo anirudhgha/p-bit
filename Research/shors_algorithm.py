@@ -27,11 +27,11 @@ numTotal_qbits = 5
 
 print('Building Network...')
 myp = pbit.pcircuit(Jr, hr)
+myp.draw()
 print('Generating samples...')
 m_all = myp.generate_samples(Nt, gpu=True)
 m_all[m_all == 0] = -1
 
-Look = 2 ** (np.arange(numTotal_qbits))
 Probs = np.zeros(2 ** numTotal_qbits, dtype=np.complex_)
 E = complex(0, 0)
 m = np.sign(np.add(np.random.rand(Nm) * 2, -1))
@@ -52,12 +52,6 @@ xrange = np.arange(15)
 print('Complete...')
 plt.stem(xrange, XX, use_line_collection=True)
 plt.show()
-
-
-
-
-
-
 
 
 

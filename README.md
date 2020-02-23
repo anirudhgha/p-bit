@@ -8,10 +8,14 @@ A comprehensive p-bit python package that simplifies execution of p-circuits. Se
 
 ## To Do
 GPU works! Running an And gate on MATLAB for 1e7 samples takes ~46s, takes ~2s on laptop gtx1060
-- [ ] get shors algorithm incorporate somehow
-- [ ] input image to act as ground state for p-circuit (load_image)
-- [ ] Make a live update addition to generate_samples which lets you see color-flipping checkerboard of the p-bits for nearest neighbor, or color-flipping squares
-arranged in a circle for any other topology, https://stackoverflow.com/questions/25385216/python-real-time-varying-heat-map-plotting
+- [ ] implement annealing properly, it doesn't work currently. modify increment annealing to send an entire beta (eventually it'll be sending batches of some 1e6 beta values and recalculating
+the next batch at the end of that length)
+- [ ] make J optimal for k-nearest neighbor setups by having Nm rows and each row only has k columns, one for each neighbor, may require modifying cpsl and ppsl functions
+to only convolve with certain p-bits associated with each column
+- [ ] NOTE: CAN HOLD OFF ON SHORS, it seems it may not be optimal for p-bits afterall, get shors algorithm incorporate somehow
+- [x] ~~input image to act as ground state for p-circuit (load_image)~~
+- [x] ~~Make a live update addition to generate_samples which lets you see color-flipping checkerboard of the p-bits for nearest neighbor, or color-flipping squares
+arranged in a circle for any other topology, https://stackoverflow.com/questions/25385216/python-real-time-varying-heat-map-plotting~~
 - [ ] update readme with new load() function
 - [x] ~~make a sublcass of pbit which contains an assortment of J/h's already stored~~
 - [ ] see how to import c++ functions into python to be able to communicate with aws fpga, check out http://www.swig.org/papers/PyTutorial98/PyTutorial98.pdf
@@ -21,10 +25,8 @@ arranged in a circle for any other topology, https://stackoverflow.com/questions
 - [ ] Option of running without returning every intermediate state (only final)
 - [ ] Option to sample every Nth timestep, and returns Nt/N samples though it runs for Nt timesteps
 - [x] ~~Need to integrate gpu cpsl into pbit module, currently works as a standalone unit~~ Integrated cpsl and ppsl gpu functions into pbit module
-- [ ] modify increment annealing to send an entire beta (eventually it'll be sending batches of some 1e6 beta values and recalculating
-the next batch at the end of that length)
-- [ ] add pbit.convertMatToCSV to convert matlab to python readable easily, maybe could 
-just figure out how to export mat files as csv. 
+- [x] ~~add pbit.convertMatToCSV to convert matlab to python readable easily, maybe could 
+just figure out how to export mat files as csv.~~ EXISTS IN SCIPY: See scipy example in shor's algorithm
 - [x] ~~incorporate annealing (constant, linear, geometric to begin)~~ test annealing, doesn't seem to be making a difference
 - [x] ~~extend class with draw function to draw the current p-circuit object~~ pcircuit.draw()
 - [x] ~~cpsl and ppsl are not matching Boltzmann~~, error was with pbit.convertToBase10
@@ -32,8 +34,7 @@ just figure out how to export mat files as csv.
 and return a 1D array of base 10 values.~~ 
 - [x] ~~gpu speeds are slower than cpu speeds, need to optimize cpsl and ppsl functions to better use gpu~~ 1060 wrecks i7 cpu now (~60x)
 - [ ] introduce more post-processing functions for analysing data, maybe quantum functions
-- [ ] possible bug in draw function (_not_drawn() does not correctly keep track of drawn labels)
-
+- [ ] possible bug in draw function (_not_drawn() does not correctly keep track of drawn labels). Draw function isn't too reliable as is, may need to update it to make it robust. 
 ## Getting Started
 To get started, initialize a p-circuit with the necessary parameters following:
 ```python
