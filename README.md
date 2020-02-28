@@ -8,7 +8,10 @@ A comprehensive p-bit python package that simplifies execution of p-circuits. Se
 
 
 ## To Do
-GPU works! Running an And gate on MATLAB for 1e7 samples takes ~46s, takes ~2s on laptop gtx1060
+Pre-compilation works! Running an And gate on MATLAB for 1e7 samples takes ~46s, takes ~2s on laptop gtx1060. Python cpsl takes 283s to run a 24 p-bit network for 1e6 samples without gpu and 2.18s with gpu
+- [ ] cupy may be easier to use, its a direct alternative to numpy. use pytorch to have your code actually run on the gpu. Pytorch has matmul and dot/ other functions already optimized for the gpu. need to transfer data to and from gpu memory etc...
+- [ ] build quantum cpsl function which processes imaginary J/h components and returns a complex array of every state
+- [ ] Optimize the GPU function, see https://numba.pydata.org/numba-doc/dev/cuda/memory.html to understand how to manage memory efficiently
 - [ ] talk with fariah to incorporate new ppsl model
 - [ ] talk with jan to incorporate learning into the package
 - [ ] implement annealing properly, it doesn't work currently. modify increment annealing to send an entire beta (eventually it'll be sending batches of some 1e6 beta values and recalculating
@@ -67,12 +70,6 @@ See the full function definition [below](#generate_samples)
 __Step 3)__ Visualize the results. Histograms are a great way to see which states your network preferred over the course of its run. To plot a histogram, it is important to have generate_samples return a decimal value for each sample...
 ```python
 samples = my_pcircuit.generate_samples(Nt=100000, ret_base='decimal')
-plt.hist(samples)
-plt.show()
-OR DO...
-
-samples = my_pcircuit.generate_samples(Nt=100000)
-decimal_samples = pbit.bi_arr2de(samples)
 plt.hist(samples)
 plt.show()
 ```

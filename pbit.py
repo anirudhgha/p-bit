@@ -3,7 +3,7 @@ import numpy as np
 import turtle
 import math
 from numba import jit, float64, int64
-
+from numba import cuda
 
 class pcircuit:
     def __init__(self, J=[[]], h=[], beta=1, Nm=0, model="cpsl", delta_t=None, start_beta=1, end_beta=2,
@@ -136,6 +136,7 @@ class pcircuit:
         if Nt == 0:
             print('Error: Nt must be greater than 0')
             return
+        Nt = int(Nt)
         annealing_factors = [self.beta, self.start_beta, self.end_beta, self.growth_factor]
 
         # gpu requires specific input types
@@ -152,7 +153,7 @@ class pcircuit:
             if not gpu:
                 m_all, self.m = _cpsl(self.m, self.Nm, self.J, self.h, Nt, self.anneal, annealing_factors)
             else:
-                m_all = _cpsl_gpu(gpu_m, gpu_Nm, gpu_J, gpu_h, gpu_beta, Nt, gpu_rand)
+                m_all = _cpsl_fast(gpu_m, gpu_Nm, gpu_J, gpu_h, gpu_beta, Nt, gpu_rand)
                 m_all = np.reshape(m_all, (Nt, self.Nm))
                 self.m = m_all[Nt - 1, :]
         elif model == "ppsl":
@@ -160,7 +161,7 @@ class pcircuit:
                 m_all, self.m = _ppsl(self.m, self.Nm, self.J, self.h, self.beta, Nt, self.dt, self.anneal,
                                       annealing_factors)
             else:
-                m_all = _ppsl_gpu(gpu_m, gpu_Nm, gpu_J, gpu_h, gpu_beta, Nt, self.dt, gpu_rand)
+                m_all = _ppsl_fast(gpu_m, gpu_Nm, gpu_J, gpu_h, gpu_beta, Nt, self.dt, gpu_rand)
                 m_all = np.reshape(m_all, (Nt, self.Nm))
                 self.m = m_all[Nt - 1, :]
         else:
@@ -380,37 +381,52 @@ def live_heatmap(m_all, num_samples_to_plot=None, hold_time=0.5):
         fig.canvas.draw()
 
 
-def _incrementAnnealing(cur_beta, anneal, annealing_factors, Nt, start=False):
-    if start:
-        return annealing_factors[0] if anneal == "constant" else annealing_factors[1]
+def _set_beta(anneal, annealing_factors, Nt):
+    # annealing factors = [self.beta, self.start_beta, self.end_beta, self.growth_factor]
     if anneal == "constant":
-        return cur_beta
+        return np.ones(Nt)*annealing_factors[0]
     if anneal == "linear":
-        return cur_beta + (annealing_factors[1] - annealing_factors[0]) / Nt
+        step_size = (annealing_factors[2] - annealing_factors[1]) / Nt
+        return np.arange(Nt) * step_size
     if anneal == "geometric":
-        return cur_beta * annealing_factors[2] if (cur_beta * annealing_factors[2] < annealing_factors[1]) else \
-            annealing_factors[1]
+        all_betas = np.zeros(Nt)
+        temp_beta = annealing_factors[1]
+        for i in range(Nt):
+            all_betas[i] = temp_beta * annealing_factors[3]
+        return all_betas
 
 
 def _cpsl(m, Nm, J, h, Nt, anneal, annealing_factors):
-    beta = _incrementAnnealing(1, anneal, annealing_factors, Nt, start=True)
-    m_all = np.zeros((Nt, Nm))
-    for j in range(Nt):
-        for i in np.random.permutation(Nm):
-            xx = -1 * beta * (np.dot(m, J[:, i]) + h[i])
-            m[i] = np.sign(random.uniform(-1, 1) + np.tanh(xx))
-            beta = _incrementAnnealing(beta, anneal, annealing_factors, Nt)
-        m_all[j, :] = m
-    m_all = np.array(m_all)
-    m_all[m_all < 0] = 0
-    return m_all, m
+    if anneal == 'constant':
+        beta = annealing_factors[0]
+        m_all = np.zeros((Nt, Nm))
+        for j in range(Nt):
+            for i in np.random.permutation(Nm):
+                xx = -1 * beta * (np.dot(m, J[:, i]) + h[i])
+                m[i] = np.sign(random.uniform(-1, 1) + np.tanh(xx))
+            m_all[j, :] = m
+        m_all = np.array(m_all)
+        m_all[m_all < 0] = 0
+        return m_all, m
+    else:
+        all_beta = _set_beta(anneal, annealing_factors, Nt)
+        m_all = np.zeros((Nt, Nm))
+        for j in range(Nt):
+            for i in np.random.permutation(Nm):
+                xx = -1 * all_beta[j] * (np.dot(m, J[:, i]) + h[i])
+                m[i] = np.sign(random.uniform(-1, 1) + np.tanh(xx))
+            m_all[j, :] = m
+        m_all = np.array(m_all)
+        m_all[m_all < 0] = 0
+        return m_all, m
 
 
 @jit(float64[:](float64[:], int64, float64[:], float64[:], float64, int64, float64[:]), nopython=True)
-def _cpsl_gpu(m, Nm, J, h, beta, Nt, rand_vals):
+def _cpsl_fast(m, Nm, J, h, beta, Nt, rand_vals):
     m_all = np.zeros(Nt * Nm)  # [[0 for xx in range(a)] for yy in range(b)]
     m = np.ascontiguousarray(m)
     J = np.ascontiguousarray(J)
+    h = np.ascontiguousarray(h)
     for j in range(int(Nt)):
         for i in range(int(Nm)):
             xx = -1 * beta * (np.dot(m, J[i * Nm:i * Nm + Nm]) + h[i])
@@ -425,18 +441,19 @@ def _ppsl(m, Nm, J, h, beta, Nt, dt, anneal, annealing_factors):
     J = np.array(J)
     h = np.array(h)
     m_all = np.zeros((Nt, Nm))
+    h = np.transpose(h)
     for i in range(Nt):
-        x = np.multiply(np.add(np.dot(J, m), h), -1 * beta)
+        x = np.multiply(np.add(np.dot(m, J), h), -1 * beta)
         p = np.exp(-1 * dt * np.exp(np.multiply(-1 * m, x)))
         m = np.multiply(m, np.sign(np.subtract(p, np.random.rand(Nm))))
-        m_all[i] = m
+        m_all[i, :] = m
     m_all = np.array(m_all)
     m_all[m_all < 0] = 0
     return m_all, m
 
 
 @jit(float64[:](float64[:], int64, float64[:], float64[:], float64, int64, float64, float64[:]), nopython=True)
-def _ppsl_gpu(m, Nm, J, h, beta, Nt, dt, randval):
+def _ppsl_fast(m, Nm, J, h, beta, Nt, dt, randval):
     m_all = np.zeros(Nt * Nm)
     m = np.ascontiguousarray(m)
     J = np.ascontiguousarray(J)

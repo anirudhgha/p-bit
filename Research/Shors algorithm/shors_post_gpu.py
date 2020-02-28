@@ -15,42 +15,44 @@ import numpy as np
 import cmath
 import pbit
 import matplotlib.pyplot as plt
-
+from timeit import default_timer as timer
 
 # these values taken from matlab file python_helper_isingshor.m which uses shuvro's IsingGraphShor2.m
 mat = scipy.io.loadmat('JH_MATLAB.mat')
 J, h, Jr, hr, es, Prefac = mat['J'], mat['h'], mat['Jr'], mat['hr'], mat['es'], mat['Prefac']
+J =J.astype(complex)
 betaPSL = 1
 Nm = len(h)
-Nt = 1000000
+Nt = 1e5
 numTotal_qbits = 5
 
 print('Building Network...')
-myp = pbit.pcircuit(Jr, hr)
-myp.draw()
+myp = pbit.pcircuit(Jr, hr, model='cpsl')
 print('Generating samples...')
+start = timer()
 m_all = myp.generate_samples(Nt, gpu=True)
+time_collected = timer()-start
+print('Samples collected in ', time_collected, 's')
 m_all[m_all == 0] = -1
-
 Probs = np.zeros(2 ** numTotal_qbits, dtype=np.complex_)
 E = complex(0, 0)
 m = np.sign(np.add(np.random.rand(Nm) * 2, -1))
+
 print('Post-processing...')
-for i in range(Nt):
-    m = m_all[i, :]
-    E = es + np.multiply(0.5, np.dot(np.dot(m, J), m)) + np.dot(np.expand_dims(m, 0), h)
+for i in range(int(Nt)):
+    m[:] = m_all[i, :]
+    E = es + np.multiply(0.5, np.dot(np.dot(m, J), m)) + np.dot(m, h)
     phi = cmath.phase(np.exp(-1 * betaPSL * E))
     X2 = pbit.bi_arr2de(m[[19, 16, 13, 10, 23]])
     Probs[X2] = Probs[X2] + np.exp(1j * phi)
-
+print('Processing complete in ', timer()-time_collected)
 
 # now we have results, just need to plot
 Probs2 = np.multiply(Probs, Prefac)[0]
 PSL = np.divide(Probs2, np.sqrt(np.sum(np.square(np.abs(Probs2)))))[1:31:2]
-XX = np.square(np.abs(PSL))
-xrange = np.arange(15)
+XX = 2*np.square(np.abs(PSL))
 print('Complete...')
-plt.stem(xrange, XX, use_line_collection=True)
+plt.stem(np.arange(15), XX, use_line_collection=True)
 plt.show()
 
 

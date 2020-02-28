@@ -3,17 +3,9 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 
-J = [[0, -2, -2],
-     [-2, 0, 1],
-     [-2, 1, 0]]
-h = [2, -1, -1]
+myp = pbit.pcircuit(anneal='linear', start_beta=1, end_beta=100)
+myp.load_image_as_ground_state("32x32.png")
+samples = myp.generate_samples(1000)
+pbit.live_heatmap(samples, num_samples_to_plot=100, hold_time=0.1)
 
-my_pcircuit = pbit.pcircuit(J, h)
-m = my_pcircuit.runFor(1000)
-decimal = pbit.convertToBase10(m)
-histcpsl = [0 for i in range(2**3)]
-for i in range(1000):
-    histcpsl[decimal[i]] += 1
 
-plt.bar(np.arange(2**3), histcpsl)
-plt.show()

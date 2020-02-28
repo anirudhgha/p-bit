@@ -3,9 +3,10 @@ gpu cpsl builder
 """
 import pbit
 from numba import jit, cuda, float64, njit
-import numba
 import numpy as np
 import matplotlib.pyplot as plt
+from timeit import default_timer as timer
+
 
 
 def predetermine_beta():
@@ -43,13 +44,15 @@ J = np.ndarray.astype(np.array([[0, -2, -2],
 Jflat = np.ndarray.flatten(J)
 
 h = np.ndarray.astype(np.array([2, -1, -1]), 'float64')
-Nt = float64(100000)
+Nt = float64(10000000)
 Nm = float64(len(J))
 m = np.sign(np.add(np.random.rand(int(Nm)) * 2, -1))
+start = timer()
 m_all = cpsl_core_gpu(m, Nm, Jflat, h, Nt)
+print("Samples generated in ", timer()-start, 's')
 m_all[m_all < 0] = 0
 m_all = np.array(m_all).reshape((int(Nt), int(Nm)))
-deci = pbit.convertToBase10(m_all)
+deci = pbit.bi_arr2de(m_all)
 histdeci = np.zeros(2 ** int(Nm))
 for i in range(int(Nt)):
     histdeci[deci[i]] += 1
