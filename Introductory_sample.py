@@ -7,14 +7,14 @@ from timeit import default_timer as timer
 
 # build p-circuit
 myp = pbit.pcircuit()
-myp.load('and')
+myp.load_random(10000)
 
 # run p-circuit
-myp.draw()
+# myp.draw()
 start = timer()
-samples = myp.generate_samples(100000, gpu=True, ret_base='decimal')
+samples = myp.generate_samples(1e3, gpu=True)
 print("Generated samples in ", timer() - start, 's.')
 
 # plot
-plt.hist(samples)
-plt.show()
+# plt.hist(samples)
+# plt.show()

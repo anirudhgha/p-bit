@@ -461,7 +461,7 @@ def _ppsl_fast(m, Nm, J, h, beta, Nt, dt, randval):
     for i in range(Nt):
         x = np.multiply(np.add(np.dot(J, m), h), -1 * beta)
         p = np.exp(-1 * dt * np.exp(np.multiply(-1 * m, x)))
-        m = np.multiply(m, np.sign(np.subtract(p, np.random.rand(Nm))))
+        m = np.multiply(m, np.sign(np.subtract(p, randval[i * Nm:i*Nm+Nm])))
         m_all[i * Nm:i * Nm + Nm] = m
     m_all[m_all < 0] = 0
     return m_all

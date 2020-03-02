@@ -5,6 +5,7 @@ A comprehensive p-bit python package that simplifies execution of p-circuits. Se
 * [Getting Started](#Getting-Started)
 * [Variable Definitions](#Variable-Definitions)
 * [Methods](#Methods)
+* [Notes](#Notes)
 
 
 ## To Do
@@ -215,4 +216,12 @@ pbit.live_heatmap(samples, num_samples_to_plot=50, hold_time=0.2)
 error = pbit.errorMSE(arr1, arr2)
 ```
 finds the mean squared error between two 1D arrays. 
+
+## Notes
+The real benefit of the gpu comes in running larger networks, not in running smaller networks for longer. 
+
+|                   | Matlab        | Jit Python | GPU Python 
+| ----------------- | ------------- | ------------- | ------------- |
+| Nm=1e4, Nt=1e3    | Content Cell  | 70s           | 3.3s          |
+| Content Cell      | Content Cell  | Content Cell  | Content Cell  |
 
