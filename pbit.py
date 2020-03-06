@@ -3,6 +3,7 @@ import numpy as np
 import turtle
 import math
 from numba import jit, float64, int64
+import cupy as cp
 from numba import cuda
 
 class pcircuit:
@@ -137,39 +138,69 @@ class pcircuit:
             print('Error: Nt must be greater than 0')
             return
         Nt = int(Nt)
-        annealing_factors = [self.beta, self.start_beta, self.end_beta, self.growth_factor]
 
-        # gpu requires specific input types
-        gpu_beta = float64(self.beta)
-        gpu_m = float64(self.m)
-        gpu_J = np.ndarray.flatten(np.ndarray.astype(self.J, "float64"))
-        gpu_h = np.ndarray.flatten(np.ndarray.astype(self.h, "float64"))
-        gpu_Nm = np.int64(self.Nm)
-        gpu_rand = np.random.uniform(-1, 1, Nt * self.Nm)
+        # establish an annealing factors array which contains all annealing related information to be sent to cpsl/ppsl
+        annealing_factors = np.asarray([self.beta, self.start_beta, self.end_beta, self.growth_factor])
+
+        # jit requires specific input types
+        jit_beta = float64(self.beta)
+        jit_m = float64(self.m)
+        jit_J = np.ndarray.flatten(np.ndarray.astype(self.J, "float64"))
+        jit_h = np.ndarray.flatten(np.ndarray.astype(self.h, "float64"))
+        jit_Nm = np.int64(self.Nm)
+        jit_rand = np.random.uniform(-1, 1, Nt * self.Nm)
+
 
         if model is None:
             model = self.model
         if model == "cpsl":
             if not gpu:
-                m_all, self.m = _cpsl(self.m, self.Nm, self.J, self.h, Nt, self.anneal, annealing_factors)
-            else:
-                m_all = _cpsl_fast(gpu_m, gpu_Nm, gpu_J, gpu_h, gpu_beta, Nt, gpu_rand)
+                m_all = _cpsl_fast(jit_m, jit_Nm, jit_J, jit_h, Nt, jit_rand, self.beta)
                 m_all = np.reshape(m_all, (Nt, self.Nm))
+                self.m = m_all[Nt - 1, :]
+            else:
+                # gpu requires sending variables
+                NmNtbeta = np.array([self.Nm, Nt, self.beta], dtype=np.int)
+                cpu_samples = np.zeros((Nt, self.Nm))
+                rand_vals = jit_rand
+
+                gpu_NmNtbeta = cp.asarray(NmNtbeta)
+                gpu_samples = cp.asarray(cpu_samples)
+                gpu_J = cp.asarray(self.J)
+                gpu_h = cp.asarray(self.h)
+                gpu_m = cp.asarray(self.m)
+                gpu_rand_vals = cp.asarray(rand_vals)
+
+                _cpsl_core_gpu(cpu_samples, gpu_samples, gpu_m, gpu_NmNtbeta, gpu_J, gpu_h, gpu_rand_vals)
+                m_all = cpu_samples
                 self.m = m_all[Nt - 1, :]
         elif model == "ppsl":
             if not gpu:
-                m_all, self.m = _ppsl(self.m, self.Nm, self.J, self.h, self.beta, Nt, self.dt, self.anneal,
-                                      annealing_factors)
-            else:
-                m_all = _ppsl_fast(gpu_m, gpu_Nm, gpu_J, gpu_h, gpu_beta, Nt, self.dt, gpu_rand)
+                m_all = _ppsl_fast(jit_m, jit_Nm, jit_J, jit_h, jit_beta, Nt, self.dt, jit_rand)
                 m_all = np.reshape(m_all, (Nt, self.Nm))
+                self.m = m_all[Nt - 1, :]
+            else:
+                # gpu requires sending variables
+
+                NmNtbeta = np.array([self.Nm, Nt, self.beta], dtype=np.int)
+                samples = np.zeros((Nt, self.Nm))
+                rand_vals = jit_rand
+
+                gpu_NmNtbeta = cp.asarray(NmNtbeta)
+                gpu_samples = cp.asarray(samples)
+                gpu_J = cp.asarray(self.J)
+                gpu_h = cp.asarray(self.h)
+                gpu_m = cp.asarray(self.m)
+                gpu_rand_vals = cp.asarray(rand_vals)
+                _ppsl_core_gpu(samples, gpu_samples, gpu_m, gpu_NmNtbeta, gpu_J, gpu_h, gpu_rand_vals)
+                m_all = samples
                 self.m = m_all[Nt - 1, :]
         else:
             print("Error: unknown model")
 
-        if ret_base == 'samples' or ret_base == 'sample' or ret_base == 'b' or ret_base == 'binary':
+        if ret_base == 'samples' or ret_base == 'sample' or ret_base == 'b' or ret_base == 'binary' or ret_base == 2:
             return m_all
-        elif ret_base == 'decimal' or ret_base == 'd' or ret_base == 'deci' or ret_base == 'decimals':
+        elif ret_base == 'decimal' or ret_base == 'd' or ret_base == 'deci' or ret_base == 'decimals' or ret_base == 10:
             return bi_arr2de(m_all)
 
 
@@ -288,7 +319,7 @@ class pcircuit:
         self.Nm = np.int64(self.J.shape[0])
         self.reset() # sets up an initial m state
 
-    def load(self, name=None):
+    def load(self, name=None, city_graph=None, tsp_modifier=None):
         if name is None:
             print("ERROR: no data-name specified")
             return
@@ -320,6 +351,49 @@ class pcircuit:
             self.h = np.zeros(2)
             self.Nm = 2
             self.reset()
+        elif name == 'tsp':
+            """
+            build a j matrix for some travelling salesman problem graph. 
+
+            designing a travelling salesman J:
+            Rule 1: 1 between pbits of same city
+            Rule 2: 1 between pbits of same order
+            Rule 3: negative distances as weights between rows (ex. all p-bits in city-1-row to all cities in city-3-row)
+            Rule 4: 0 connections from city_n-order_n to itself
+            
+            See excel sheet (building_J_for_tsp in shark tank 2020 purdue onedrive)
+            """
+
+            city_graph = np.asarray(city_graph)
+            # city_graph = city_graph / city_graph.max()
+            city_graph = np.add((city_graph - np.min(city_graph)) / np.ptp(city_graph), 0.01)
+            if tsp_modifier is None:
+                tsp_modifier = 1
+            self.Nm = len(city_graph[0])
+            self.J = np.zeros((self.Nm ** 2, self.Nm ** 2))
+
+            # Rule 3: negative distances from one city to another
+            for i in range(self.Nm):
+                for j in range(self.Nm):
+                    self.J[j * self.Nm: j * self.Nm + self.Nm, i * self.Nm: i * self.Nm + self.Nm] = city_graph[j, i]
+
+            # Rule 1 - 1 between pbits of same city
+            for i in range(self.Nm):
+                self.J[i * self.Nm:i * self.Nm + self.Nm, i * self.Nm:i * self.Nm + self.Nm] = 1*tsp_modifier # dif
+
+            # Rule 2 - 1 between pbits of same order
+            for i in range(self.Nm ** 2):
+                for j in range(self.Nm ** 2):
+                    if i == j % self.Nm or j == i % self.Nm:
+                        self.J[i, j] = 1 * tsp_modifier
+
+            # Rule 4: 0s on the diagonal
+            np.fill_diagonal(self.J, 0)
+
+            self.Nm = len(self.J)
+            self.h = np.zeros(self.Nm)
+            self.reset()
+
 
 def bi_arr2de(a, inputBase=2):
     try:
@@ -407,7 +481,7 @@ def _cpsl(m, Nm, J, h, Nt, anneal, annealing_factors):
             m_all[j, :] = m
         m_all = np.array(m_all)
         m_all[m_all < 0] = 0
-        return m_all, m
+        return m_all
     else:
         all_beta = _set_beta(anneal, annealing_factors, Nt)
         m_all = np.zeros((Nt, Nm))
@@ -418,11 +492,11 @@ def _cpsl(m, Nm, J, h, Nt, anneal, annealing_factors):
             m_all[j, :] = m
         m_all = np.array(m_all)
         m_all[m_all < 0] = 0
-        return m_all, m
+        return m_all
 
 
-@jit(float64[:](float64[:], int64, float64[:], float64[:], float64, int64, float64[:]), nopython=True)
-def _cpsl_fast(m, Nm, J, h, beta, Nt, rand_vals):
+@jit(float64[:](float64[:], int64, float64[:], float64[:], int64, float64[:], float64), nopython=True)
+def _cpsl_fast(m, Nm, J, h, Nt, rand_vals, beta):
     m_all = np.zeros(Nt * Nm)  # [[0 for xx in range(a)] for yy in range(b)]
     m = np.ascontiguousarray(m)
     J = np.ascontiguousarray(J)
@@ -433,9 +507,15 @@ def _cpsl_fast(m, Nm, J, h, beta, Nt, rand_vals):
             m[i] = np.sign(rand_vals[j * Nm + i] + np.tanh(xx))
         m_all[j * Nm:j * Nm + Nm] = m
     m_all[m_all < 0] = 0
-    # m_all = np.reshape(m_all, (Nt, Nm))
     return m_all
 
+def _cpsl_core_gpu(samples, gpu_samples, gpu_m, gpu_NmNtbeta, gpu_J, gpu_h, gpu_rand_vals):
+    for j in range(int(gpu_NmNtbeta[1])):
+        for i in range(int(gpu_NmNtbeta[0])):
+            gpu_temp = -1 * gpu_NmNtbeta[2] * (cp.add(cp.dot(gpu_m, gpu_J[i, :]), gpu_h[i]))
+            gpu_m[i] = cp.sign(gpu_rand_vals[j*gpu_NmNtbeta[0]+i] + cp.tanh(gpu_temp))
+        gpu_samples[j,:] = gpu_m
+    samples[:,:] = cp.asnumpy(gpu_samples)
 
 def _ppsl(m, Nm, J, h, beta, Nt, dt, anneal, annealing_factors):
     J = np.array(J)
@@ -449,7 +529,7 @@ def _ppsl(m, Nm, J, h, beta, Nt, dt, anneal, annealing_factors):
         m_all[i, :] = m
     m_all = np.array(m_all)
     m_all[m_all < 0] = 0
-    return m_all, m
+    return m_all
 
 
 @jit(float64[:](float64[:], int64, float64[:], float64[:], float64, int64, float64, float64[:]), nopython=True)
@@ -465,6 +545,14 @@ def _ppsl_fast(m, Nm, J, h, beta, Nt, dt, randval):
         m_all[i * Nm:i * Nm + Nm] = m
     m_all[m_all < 0] = 0
     return m_all
+
+def _ppsl_core_gpu(samples, gpu_samples, gpu_m, gpu_NmNtbeta, gpu_J, gpu_h, gpu_rand_vals):
+    for i in range(int(gpu_NmNtbeta[1])):
+        x = -1 * cp.add(cp.dot(gpu_m, gpu_J), gpu_h)
+        p = cp.exp(-1 * 1 / 6 * cp.exp(cp.multiply(-1* gpu_m, x)))
+        gpu_m = cp.multiply(gpu_m, cp.sign(cp.add(p, -1 * gpu_rand_vals[int(i * gpu_NmNtbeta[0]): int(i * gpu_NmNtbeta[0] + gpu_NmNtbeta[0])])))
+        gpu_samples[i, :] = gpu_m
+    samples[:, :] = cp.asnumpy(gpu_samples)
 
 
 def _dist(x, y):

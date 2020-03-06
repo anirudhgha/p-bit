@@ -6,15 +6,16 @@ import matplotlib.pyplot as plt
 from timeit import default_timer as timer
 
 # build p-circuit
-myp = pbit.pcircuit()
-myp.load_random(10000)
+myp = pbit.pcircuit(model='cpsl')
+myp.load('and')
 
 # run p-circuit
 # myp.draw()
 start = timer()
-samples = myp.generate_samples(1e3, gpu=True)
+samples = myp.generate_samples(1e5, ret_base='decimal')
 print("Generated samples in ", timer() - start, 's.')
+print(samples)
 
 # plot
-# plt.hist(samples)
-# plt.show()
+plt.hist(samples)
+plt.show()
