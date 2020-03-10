@@ -64,7 +64,7 @@ class pcircuit:
     def getWeights(self):
         return self.J, self.h
 
-    def getmodel(self):
+    def getModel(self):
         return self.model
 
     def getSize(self):
@@ -276,13 +276,13 @@ class pcircuit:
         if file_name is None:
             print("ERROR: no filename specified")
             return
-        orig = Image.open('32x32.png')
+        orig = Image.open(file_name)
         baw = orig.convert('1') #convert to black and white (baw)
         width, height = baw.size
         if width != height:
             print("ERROR: image must be a square")
             return
-        J_temp = np.ones((height * width, height * width))
+        J_temp = np.zeros((height * width, height * width))
 
         # opposite pixels get weight of 1
         for row in range(height):
@@ -305,12 +305,20 @@ class pcircuit:
                 else:
                     down = 0
                 if col + 1 < width and baw.getpixel((col, row)) != baw.getpixel((col + 1, row)):
+                    J_temp[cur, right] = 1
+                elif col + 1 < width and baw.getpixel((col, row)) == baw.getpixel((col + 1, row)):
                     J_temp[cur, right] = -1
                 if row + 1 < height and baw.getpixel((col, row)) != baw.getpixel((col, row + 1)):
+                    J_temp[cur, down] = 1
+                elif row + 1 < width and baw.getpixel((col, row)) == baw.getpixel((col, row + 1)):
                     J_temp[cur, down] = -1
                 if col - 1 > 0 and baw.getpixel((col, row)) != baw.getpixel((col - 1, row)):
+                    J_temp[cur, left] = 1
+                elif col - 1 < width and baw.getpixel((col, row)) == baw.getpixel((col - 1, row)):
                     J_temp[cur, left] = -1
                 if row - 1 > 0 and baw.getpixel((col, row)) != baw.getpixel((col, row - 1)):
+                    J_temp[cur, up] = 1
+                elif row - 1 < width and baw.getpixel((col, row)) == baw.getpixel((col, row - 1)):
                     J_temp[cur, up] = -1
         h = np.zeros(width*height)
 
@@ -366,26 +374,38 @@ class pcircuit:
 
             city_graph = np.asarray(city_graph)
             # city_graph = city_graph / city_graph.max()
-            city_graph = np.add((city_graph - np.min(city_graph)) / np.ptp(city_graph), 0.01)
+
+            # normalize the graph between 0 and 1
+            # city_graph = np.add((city_graph - np.min(city_graph)) / np.ptp(city_graph), 0.01)
+            city_graph = np.divide(city_graph, np.amax(np.abs(city_graph)))
+            # city_graph = np.divide(1,city_graph) # make the largest weight smallest and smallest weight largest so smallest weight pulls together most
+
             if tsp_modifier is None:
                 tsp_modifier = 1
-            self.Nm = len(city_graph[0])
-            self.J = np.zeros((self.Nm ** 2, self.Nm ** 2))
+            Nm_cities = len(city_graph[0])
+            self.J = np.zeros((Nm_cities ** 2, Nm_cities ** 2))
 
             # Rule 3: negative distances from one city to another
-            for i in range(self.Nm):
-                for j in range(self.Nm):
-                    self.J[j * self.Nm: j * self.Nm + self.Nm, i * self.Nm: i * self.Nm + self.Nm] = city_graph[j, i]
+            for i in range(Nm_cities):
+                for j in range(Nm_cities):
+                    #if order(i) is one away from order(j)
+                    if i == j:
+                        continue
+                    off_diag = np.ones(Nm_cities-1) * city_graph[j, i]
+                    #set both off diagonals (one to the left and right of main diagonal) of weights to off_diag
+                    weights_i_j = np.diag(off_diag, 1) + np.diag(off_diag, -1)
+
+                    self.J[j * Nm_cities: j * Nm_cities + Nm_cities, i * Nm_cities: i * Nm_cities + Nm_cities] = weights_i_j[:,:]
 
             # Rule 1 - 1 between pbits of same city
-            for i in range(self.Nm):
-                self.J[i * self.Nm:i * self.Nm + self.Nm, i * self.Nm:i * self.Nm + self.Nm] = 1*tsp_modifier # dif
+            for i in range(Nm_cities):
+                self.J[i * Nm_cities:i * Nm_cities + Nm_cities, i * Nm_cities:i * Nm_cities + Nm_cities] = tsp_modifier # dif
 
             # Rule 2 - 1 between pbits of same order
-            for i in range(self.Nm ** 2):
-                for j in range(self.Nm ** 2):
-                    if i == j % self.Nm or j == i % self.Nm:
-                        self.J[i, j] = 1 * tsp_modifier
+            for i in range(Nm_cities ** 2):
+                for j in range(Nm_cities ** 2):
+                    if i == j % Nm_cities or j == i % Nm_cities:
+                        self.J[i, j] = tsp_modifier
 
             # Rule 4: 0s on the diagonal
             np.fill_diagonal(self.J, 0)

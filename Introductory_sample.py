@@ -10,11 +10,10 @@ myp = pbit.pcircuit(model='cpsl')
 myp.load('and')
 
 # run p-circuit
-# myp.draw()
+myp.draw()
 start = timer()
-samples = myp.generate_samples(1e5, ret_base='decimal')
+samples = myp.generate_samples(1e5, gpu=False, ret_base='decimal')
 print("Generated samples in ", timer() - start, 's.')
-print(samples)
 
 # plot
 plt.hist(samples)
