@@ -30,7 +30,7 @@ print('Building Network...')
 myp = pbit.pcircuit(Jr, hr, model='cpsl')
 print('Generating samples...')
 start = timer()
-m_all = myp.generate_samples(Nt, gpu=True)
+m_all = myp.generate_samples(Nt, gpu=False)
 time_collected = timer()-start
 print('Samples collected in ', time_collected, 's')
 m_all[m_all == 0] = -1

@@ -1,8 +1,16 @@
 import pbit
 import numpy as np
+import matplotlib.pyplot as plt
 
-a = [[1, 2, 3], [4, 5, 6],[7, 8, 9]]
-a = np.asarray(a)
-a[0:2,0:2] = 1
+J = [[0, -2, -2],
+     [-2, 0, 1],
+     [-2, 1, 0]]
+h = [2, -1, -1]
+myp = pbit.pcircuit(J=J, h=h)
 
-print(a)
+print(pbit.bi_arr2de([0, 1, 1]))
+
+samples = myp.generate_samples(1e5, ret_base=10)
+
+plt.hist(samples)
+plt.show()

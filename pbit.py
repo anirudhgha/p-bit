@@ -21,7 +21,7 @@ class pcircuit:
         else:
             self.dt = delta_t
         self.m = np.sign(np.add(np.random.rand(self.Nm) * 2, -1))
-        # annealing
+        # annealing can be constant, linear, geometric
         self.beta = beta
         self.start_beta = start_beta
         self.end_beta = end_beta
@@ -121,7 +121,7 @@ class pcircuit:
             else:
                 self.h = np.zeros((Nm))
 
-    def generate_samples(self, Nt, model=None, gpu=False, ret_base ='binary'):
+    def generate_samples(self, Nt, model=None, exe=0, ret_base ='binary'):
         """
         can provide an update scheme(cpsl, ppsl) to take effect for num_steps (Nt) timesteps, otherwise, the currently set
         update scheme will take effect. If no update scheme has been selected, it will default to classical psl. Setting
@@ -131,7 +131,9 @@ class pcircuit:
         geometric (beta_start, beta_end, growth_factor)
         :param Nt: number of samples to generate (length of time to 'run' network if you collect 1 sample per time unit)
         :param model: cpsl or ppsl
-        :param gpu: gpu currently does not support annealing, only a constant annealing scheme beta
+        :param exe: execution method. 0 means basic psl with full annealing capabilities. 1 means JIT enhanced (fast psl).
+        2 uses gpu if nvidia gpu is available. gpu currently does not support annealing, only a constant annealing scheme beta
+
         :return:
         """
         if Nt == 0:
@@ -154,7 +156,11 @@ class pcircuit:
         if model is None:
             model = self.model
         if model == "cpsl":
-            if not gpu:
+            if exe == 0:
+                m_all = _cpsl(self.m, self.Nm, self.J, self.h, Nt, self.anneal, annealing_factors)
+                m_all = np.reshape(m_all, (Nt, self.Nm))
+                self.m = m_all[Nt - 1, :]
+            elif exe == 1:
                 m_all = _cpsl_fast(jit_m, jit_Nm, jit_J, jit_h, Nt, jit_rand, self.beta)
                 m_all = np.reshape(m_all, (Nt, self.Nm))
                 self.m = m_all[Nt - 1, :]
@@ -175,7 +181,7 @@ class pcircuit:
                 m_all = cpu_samples
                 self.m = m_all[Nt - 1, :]
         elif model == "ppsl":
-            if not gpu:
+            if exe == 1 or exe == 0:
                 m_all = _ppsl_fast(jit_m, jit_Nm, jit_J, jit_h, jit_beta, Nt, self.dt, jit_rand)
                 m_all = np.reshape(m_all, (Nt, self.Nm))
                 self.m = m_all[Nt - 1, :]
@@ -431,6 +437,7 @@ def bi_arr2de(a, inputBase=2):
     except:
         print("Error: please send array to convert")
         return
+    a = np.asarray(a)
     a[a < 0] = 0
     arr = np.flip(np.array(a))
     length = len(arr[0]) if arr.ndim == 2 else len(arr)
