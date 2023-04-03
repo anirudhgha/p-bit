@@ -5,11 +5,13 @@ A comprehensive p-bit python package that simplifies execution of p-circuits. Se
 * [Getting Started](#Getting-Started)
 * [Variable Definitions](#Variable-Definitions)
 * [Methods](#Methods)
+* [Notes](#Notes)
 
 
 ## To Do
 Pre-compilation works! Running an And gate on MATLAB for 1e7 samples takes ~46s, takes ~2s on laptop gtx1060. Python cpsl takes 283s to run a 24 p-bit network for 1e6 samples without gpu and 2.18s with gpu
 - [ ] cupy may be easier to use, its a direct alternative to numpy. use pytorch to have your code actually run on the gpu. Pytorch has matmul and dot/ other functions already optimized for the gpu. need to transfer data to and from gpu memory etc...
+- [ ] add "if x: raise Exception('this is an error')" for errors in the module
 - [ ] build quantum cpsl function which processes imaginary J/h components and returns a complex array of every state
 - [ ] Optimize the GPU function, see https://numba.pydata.org/numba-doc/dev/cuda/memory.html to understand how to manage memory efficiently
 - [ ] talk with fariah to incorporate new ppsl model
@@ -215,4 +217,12 @@ pbit.live_heatmap(samples, num_samples_to_plot=50, hold_time=0.2)
 error = pbit.errorMSE(arr1, arr2)
 ```
 finds the mean squared error between two 1D arrays. 
+
+## Notes
+The real benefit of the gpu comes in running larger networks, not in running smaller networks for longer. 
+
+|                   | Matlab        | Jit Python | GPU Python 
+| ----------------- | ------------- | ------------- | ------------- |
+| Nm=1e4, Nt=1e3    | Content Cell  | 70s           | 3.3s          |
+| Content Cell      | Content Cell  | Content Cell  | Content Cell  |
 
